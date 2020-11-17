@@ -12,8 +12,11 @@ import router from './router'
 import { menuHeader, menuAside } from '@/menu'
 import { frameInRoutes } from '@/router/routes'
 
+import globalFunc from '@/global.js'
+
 // 核心插件
 Vue.use(d2Admin)
+Vue.use(globalFunc)
 
 new Vue({
   router,

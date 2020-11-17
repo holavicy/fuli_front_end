@@ -19,35 +19,57 @@ const frameIn = [
         meta: {
           auth: true
         },
-        component: _import('system/index')
+        component: _import('pages/index')
       },
-      // 演示页面
+      // 商品维护页面
       {
-        path: 'page1',
-        name: 'page1',
+        path: 'goodsConfig',
+        name: 'goodsConfig',
         meta: {
-          title: '页面 1',
+          title: '商品维护',
           auth: true
         },
-        component: _import('demo/page1')
+        component: _import('pages/goods/goodsConfig')
       },
+      // 礼包维护页面
       {
-        path: 'page2',
-        name: 'page2',
+        path: 'giftBagConfig',
+        name: 'giftBagConfig',
         meta: {
-          title: '页面 2',
+          title: '礼包维护',
           auth: true
         },
-        component: _import('demo/page2')
+        component: _import('pages/giftBag/giftBagConfig')
       },
+      // 选择礼包页面
       {
-        path: 'page3',
-        name: 'page3',
+        path: 'giftBag',
+        name: 'giftBag',
         meta: {
-          title: '页面 3',
+          title: '礼包列表',
           auth: true
         },
-        component: _import('demo/page3')
+        component: _import('pages/giftBag/giftBag')
+      },
+      // 订单列表（员工）
+      {
+        path: 'orderList',
+        name: 'orderList',
+        meta: {
+          title: '订单列表',
+          auth: true
+        },
+        component: _import('pages/order/orderList')
+      },
+      // 订单列表（管理员）
+      {
+        path: 'orderConfig',
+        name: 'orderConfig',
+        meta: {
+          title: '订单维护',
+          auth: true
+        },
+        component: _import('pages/order/orderConfig')
       },
       // 系统 前端日志
       {
