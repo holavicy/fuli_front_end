@@ -11,12 +11,12 @@
           :class="{'logo-group': true, 'logo-transition': asideTransition}"
           :style="{width: asideCollapse ? asideWidthCollapse : asideWidth}"
           flex-box="0">
-          <img v-if="asideCollapse" :src="`${$baseUrl}image/theme/${themeActiveSetting.name}/logo/icon-only.png`">
-          <img v-else :src="`${$baseUrl}image/theme/${themeActiveSetting.name}/logo/all.png`">
+          <img v-if="asideCollapse" :src="`${$baseUrl}image/theme/d2/logo/icon-only.png`">
+          <img v-else :src="`${$baseUrl}image/theme/d2/logo/all.png`">
         </router-link>
-        <div class="toggle-aside-btn" @click="handleToggleAside" flex-box="0">
+        <!-- <div class="toggle-aside-btn" @click="handleToggleAside" flex-box="0">
           <d2-icon name="bars"/>
-        </div>
+        </div> -->
         <d2-menu-header flex-box="1"/>
         <!-- 顶栏右侧 -->
         <div class="d2-header-right" flex-box="0">
@@ -28,7 +28,7 @@
           <d2-header-size/>
           <d2-header-locales/>
           <d2-header-color/> -->
-          <d2-header-user/>
+          <!-- <d2-header-user/> -->
         </div>
       </div>
       <!-- 下面 主体 -->
@@ -84,7 +84,7 @@ import d2HeaderFullscreen from './components/header-fullscreen'
 // import d2HeaderSearch from './components/header-search'
 // import d2HeaderSize from './components/header-size'
 // import d2HeaderTheme from './components/header-theme'
-import d2HeaderUser from './components/header-user'
+// import d2HeaderUser from './components/header-user'
 // import d2HeaderLog from './components/header-log'
 // import d2HeaderColor from './components/header-color'
 import { mapState, mapGetters, mapActions } from 'vuex'
@@ -98,12 +98,12 @@ export default {
     // d2MenuSide,
     d2MenuHeader,
     d2Tabs,
-    d2HeaderFullscreen,
+    d2HeaderFullscreen
     // d2HeaderLocales,
     // d2HeaderSearch,
     // d2HeaderSize,
     // d2HeaderTheme,
-    d2HeaderUser
+    // d2HeaderUser
     // d2HeaderLog,
     // d2HeaderColor
   },

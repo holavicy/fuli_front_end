@@ -57,7 +57,6 @@ router.beforeEach(async (to, from, next) => {
       // 若是钉钉环境，进行免登操作；若不是，跳转登录界面
       const isDD = dd.env.platform !== 'notInDingTalk'
       if(isDD){
-        console.log('进行免登')
         dd.ready(function() {
           dd.runtime.permission.requestAuthCode({
             corpId: config.corpId, // 企业id
@@ -68,7 +67,6 @@ router.beforeEach(async (to, from, next) => {
               }
               api.DING_LOGIN(data)
                 .then(async (res) => {
-                  console.log(res)
                   let user_info = {
                     'staffNo': res.jobnumber,
                     'avatar': res.avatar,
@@ -76,13 +74,22 @@ router.beforeEach(async (to, from, next) => {
                     'mobile': res.mobile,
                     'postition': res.extattr['position']
                   }
-                  const db = await store.dispatch('d2admin/db/database', {
-                    user: true
+                  let nc_data = {
+                    code: res.jobnumber
+                  }
+                  api.GET_USERINFO_NC(nc_data).then( async (r) => {
+                    user_info.birthday = r.list[0].BIRTHDATE
+                    user_info.hiredate = r.list[0].HIREDATE
+                    user_info.userStatus = r.list[0].HIREDATE ? 1 : 2
+                    const db = await store.dispatch('d2admin/db/database', {
+                      user: true
+                    })
+                    db
+                      .set('user_info', user_info)
+                      .write()
+                    next()
                   })
-                  db
-                    .set('user_info', user_info)
-                    .write()
-                  next()
+                  
                 })
                 .catch(err => {
                   console.log('err', err)
