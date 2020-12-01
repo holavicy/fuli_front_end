@@ -22,14 +22,8 @@ const menu = [
     icon: 'gift',
     children: [
       { path: '/giftBag', title: '礼包列表' },
-      { path: '/giftBagConfig', title: '礼包维护' }
-    ]
-  },
-  {
-    title: '商品中心',
-    icon: 'star',
-    children: [
-      { path: '/goodsConfig', title: '商品维护' }
+      { path: '/giftBagConfig', title: '礼包维护', roles: ['admin'] },
+      { path: '/goodsConfig', title: '商品维护', roles: ['admin'] }
     ]
   },
   {
@@ -37,7 +31,15 @@ const menu = [
     icon: 'th-list',
     children: [
       { path: '/orderList', title: '我的订单' },
-      { path: '/orderConfig', title: '订单列表' }
+      { path: '/othersOrderList', title: '代领订单' },
+      { path: '/orderConfig', title: '订单列表', roles: ['admin'] }
+    ]
+  },
+  {
+    title: '统计中心',
+    icon: 'th-list',
+    children: [
+      { path: '/staffSummary', title: '员工领取情况', roles: ['admin'] }
     ]
   }
 ]

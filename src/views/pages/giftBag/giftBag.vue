@@ -4,7 +4,7 @@
         <div class="action-wrapper">
             <div class="filter-item"><span>礼包名称：</span> <el-input size="mini" placeholder="请输入内容" v-model="giftBagName"></el-input></div>
             <div class="filter-item"><span>商品名称：</span> <el-input size="mini" placeholder="请输入内容" v-model="goodsName"></el-input></div>
-            <el-button size="mini" type="primary">查询</el-button>
+            <el-button size="mini" type="primary" @click="getGifts(1)">查询</el-button>
         </div>
     </template>
 
@@ -13,7 +13,7 @@
         <template slot="title">
           <div class="title-wrapper">
             <div class="left">
-              <el-radio v-model="selectedGiftBagIndex" :label="index" @change="giftBagIndexChanged">
+              <el-radio v-model="selectedGiftBagIndex" :label="index">
                 {{index+1}}、
                 <span style="font-weight: bold">{{giftBag.name}}</span>
                 </el-radio>
@@ -33,7 +33,7 @@
             <p class="price-wrapper">
               <span>¥{{goods.price}}/{{goods.unit}}</span>
                 <el-tooltip class="item" effect="dark" content="该商品库存为空，若喜欢，点我通知管理员补货啦~" placement="right-start">
-                <i class="fa fa-heart want-add" aria-hidden="true" v-if="goods.num<=0"></i>
+                <i class="fa fa-heart want-add" aria-hidden="true" v-if="goods.num<=0" @click="want(goods.id)"></i>
                 </el-tooltip>
             </p>
             </div>
@@ -41,26 +41,43 @@
         </div>
       </el-collapse-item>
     </el-collapse>
+    <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
+
       <el-divider content-position="left" style="font-size:18px">订单详情</el-divider>
       <div class="footer-wrapper">
         <div class="order-info">
-          <div class="info-item"><span class="title">生日礼包领取人：</span><span>陈明姣</span><span type="text" style="margin-left: 20px">代他人领取</span></div>
-          <div class="info-item"><span class="title">领取年份：</span><span>2020</span></div>
+          <div class="info-item"><span class="title">生日礼包领取人：</span><span>{{staffName}}</span><span v-if="canSupply" type="text" class="btn-primary" style="margin-left: 20px" @click="chooseStaff()">代他人领取</span></div>
+          <div class="info-item"><span class="title">领取年份：</span><span>{{this.year}}</span></div>
           <div class="info-item"><span class="title">领取礼包名称：</span><span>{{selectedGiftBag.name}}</span></div>
         </div>
         <div class="button-wrapper">
           <!-- <div class="btn left" @click="showDrawer">查看生日<br>礼包详情</div> -->
-          <div class="btn right" @click="createOrder">确定领取<br>此生日礼包</div>
+          <div class="btn right" @click="createOrder()">确定领取<br>此生日礼包</div>
         </div>
       </div>
+
+      <el-dialog
+      title="提示"
+      :visible.sync="dialogVisible"
+      width="30%">
+      <span>确定申请后将无法修改生日礼包，您确定申请此礼包？</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="createOrderRes()">确 定</el-button>
+      </span>
+    </el-dialog>
   </d2-container>
 </template>
 
 <script>
+import { mapActions } from 'vuex'
+import * as dd from 'dingtalk-jsapi'
 export default {
   name: 'giftBag',
   data () {
     return {
+      dialogVisible: false,
+      today: new Date(),
       pagination: {
         currentPage: 1,
         pageSize: 10,
@@ -73,7 +90,20 @@ export default {
       giftBagName: '',
       goodsName: '',
       giftBagList: [],
-      selectedGiftBag: {}
+      staffNo: '',
+      creator: '',
+      staffName: '',
+      creatorName: '',
+      canSupply: false
+    }
+  },
+  computed: {
+    year: function () {
+      return this.today.getFullYear()
+    },
+
+    selectedGiftBag: function () {
+      return String(this.selectedGiftBagIndex) ? this.giftBagOriList[this.selectedGiftBagIndex] : {}
     }
   },
   methods: {
@@ -98,18 +128,20 @@ export default {
       })
       return resData
     },
-    // 查看订单详情
-    showDrawer () {
-      if (!this.selectedGiftBag.id) {
-        this.$message.error('请先选择礼包')
-        return
-      } else {
-        this.drawer = true
-        console.log(this.selectedGiftBag.goods)
-      }
-    },
     // 礼包中选择商品
     checkedChanged (value) {
+      console.log(this.checked)
+      const length = this.checked.length
+      console.log('length', length)
+      // 选中商品默认选中该商品所属于的礼包
+      this.selectedGiftBagIndex = Number(this.checked[length-1].index) - 1
+      console.log(this.selectedGiftBagIndex)
+      // 将this.check中不属于同一个礼包的数据移除
+      if (length >= 2 && this.checked[length-1].giftBagId != this.checked[0].giftBagId) {
+        this.checked = this.checked.slice(-1)
+      }
+      // 在根据limitNum控制当前礼包哪些商品不可选
+      console.log(this.checked)
       if (this.checked.length > 0 && this.checked.length >= this.checked[0].giftBagLimitNum) {
         let index = this.checked[0].index - 1
         this.giftBagOriList[index].goods.forEach(oriGoods => {
@@ -129,14 +161,6 @@ export default {
           })
         }
       }
-    },
-    // 选择礼包
-    giftBagIndexChanged () {
-      this.selectedGiftBag = this.giftBagOriList[this.selectedGiftBagIndex]
-      this.checked = []
-    },
-    handleClose () {
-      this.drawer = false
     },
     // 创建订单
     createOrder () {
@@ -165,6 +189,11 @@ export default {
           return
         }
       }
+      this.dialogVisible = true
+    },
+    // 创建订单接口
+    createOrderRes () {
+      this.dialogVisible = false
       // 判断是否领取了礼包
       let data = this.selectedGiftBag
 
@@ -173,19 +202,24 @@ export default {
       }
 
       // 领取礼包的人
-      data.staffNo = '100297' 
+      data.staffNo = this.staffNo
+      data.staffName = this.staffName
       // 创建礼包的人
-      data.creator = '100297'
-      data.year = '2020'
+      data.creator = this.creator
+      data.creatorName = this.creatorName
+      data.year = this.year
       console.log(data)
-      console.log('调用创建订单接口')
-
       this.$api.CREATE_ORDER(data).then( res => {
         this.$message.success('生日礼包申领成功，等待管理员确认中')
+        this.$router.push('/orderList')
       })
     },
     // 获取所有上架礼包
-    getGifts () {
+    getGifts (page) {
+      this.selectedGiftBagIndex = ''
+      if (page) {
+        this.pagination.currentPage = page
+      }
       const data = {
         page: this.pagination.currentPage,
         pageSize: this.pagination.pageSize,
@@ -201,8 +235,100 @@ export default {
         this.giftBagList = this.formatGiftBagData(this.giftBagOriList)
       })
     },
+
+    // 选择申请人
+    chooseStaff () {
+      console.log('start')
+      const url = 'http://127.0.0.1:8080/'
+      this.$api.JASPI_CONFIG({url: url}).then((res) => {
+        console.log(res)
+        dd.config({
+          agentId: res.agentId,
+          corpId: res.corpId, //必填，企业ID
+          timeStamp: res.timeStamp, // 必填，生成签名的时间戳
+          nonceStr: res.nonceStr, // 必填，生成签名的随机串
+          signature: res.signature, // 必填，签名
+          jsApiList: ['biz.contact.complexPicker'] // 必填，需要使用的jsapi列表，注意：不要带dd。
+        })
+        dd.ready(() => {
+          dd.biz.contact.complexPicker({
+            "title": "选择申请人",
+            "corpId": "dingcd0f5a2514db343b35c2f4657eb6378f",
+            "multiple": false,
+            "limitTips": "超出了",
+            "maxUsers": 1,
+            "pickedUsers": [],
+            "pickedDepartments": [],
+            "disabledUsers": [],
+            "disabledDepartments": [],
+            "requiredUsers": [],
+            "requiredDepartments": [],
+            "appId": 927117753,
+            "permissionType": "GLOBAL",
+            "responseUserOnly": false,
+            "startWithDepartmentId": 0,
+            onSuccess: (result) => {
+              this.$api.GET_INFO_BY_USER_ID({userId: result.users[0].emplId}).then(r => {
+                if (r.errcode == 0) {
+                  this.staffNo = r.jobnumber
+                  this.staffName = r.name
+                } else {
+                  this.$message.error(r.errmsg)
+                }
+              })
+            },
+            onFail : (err) => {}
+        });
+        })
+      })
+    },
+    ...mapActions('d2admin/db', [
+      'database',
+      'databaseClear'
+    ]),
+    async load () {
+      const db = await this.database({ user: true })
+      const userInfo = db.get('user_info').value()
+      console.log(userInfo)
+      this.staffNo = userInfo.staffNo
+      this.creator = userInfo.staffNo
+      this.staffName = userInfo.name
+      this.creatorName = userInfo.name
+      this.getSupplyList()
+    },
+    handleSizeChange (val) {
+      this.pagination.pageSize = val
+      this.getGifts()
+    },
+    handleCurrentChange (val) {
+      this.pagination.currentPage = val
+      this.getGifts()
+    },
+    want (id) {
+      console.log(id)
+      const data = {
+        goodsId: id,
+        staffNo: this.creator,
+        creatorName: this.creatorName
+      }
+      this.$api.LIKE(data).then((res) => {
+        this.$message.success('操作成功')
+      })
+    },
+    getSupplyList () {
+      const data = {
+        page: '',
+        pageSize: '',
+        year: this.year,
+        supplyStaffNo: this.creator
+      }
+      this.$api.GET_SUPPLY(data).then(res => {
+        this.canSupply = res && res.count > 0
+      })
+    }
   },
   created () {
+    this.load()
     this.getGifts()
   }
 }
@@ -275,13 +401,9 @@ export default {
 }
 .button-wrapper .btn.right:hover{
   cursor: pointer;
-  background:#a6a9ad;
 }
 .button-wrapper .btn.left{
   border-right: 1px solid #ffffff;
-}
-.button-wrapper .btn.right{
-  background: #909399;
 }
 .goods-wrapper{
   display: flex;
@@ -317,5 +439,17 @@ export default {
 .price-wrapper .want-add:hover{
   cursor: pointer;
   color: red;
+}
+
+.btn-primary{
+  background-color: #409EFF;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+}
+.btn-primary:hover{
+  cursor: pointer;
+  background:#017EFF;
 }
 </style>

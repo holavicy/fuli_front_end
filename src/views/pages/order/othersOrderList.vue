@@ -2,9 +2,6 @@
   <d2-container>
     <template slot="header">
         <div class="action-wrapper">
-            <div class="filter-item"><span>工号：</span> <el-input size="mini" placeholder="请输入内容" v-model="staffNo"></el-input></div>
-            <div class="filter-item"><span>姓名：</span> <el-input size="mini" placeholder="请输入内容" v-model="staffName"></el-input></div>
-
             <div class="filter-item"><span>领取年份：</span><el-date-picker size="mini" v-model="year" type="year" placeholder="请选择"></el-date-picker></div>
             <div class="filter-item"><span>领取状态：</span><el-select size="mini" v-model="orderStatus" placeholder="请选择">
                 <el-option
@@ -18,7 +15,6 @@
             <el-button size="mini" type="primary" @click="getOrderList(1)">查询</el-button>
         </div>
     </template>
-
     <el-collapse accordion>
       <el-collapse-item v-for="(order, index) in orderList" :key="order.id">
         <template slot="title">
@@ -26,16 +22,12 @@
             <div class="left">
                 {{index+1}}、
                 <span style="font-weight: bold">{{order.year}}——{{order.giftName}}</span>
-                <span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</i></span>
-                <span class="cus-badge" v-if="order.creatorNo != order.staffNo && order.creatorName">由{{order.creatorName.trim()}}代领</span>
+                <span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</span>
             </div>
-            <div class="staff-no">{{order.staffNo}}</div>
             <div class="staff-name">{{order.staffName}}</div>
             <div class="status">{{orderStatusDict[order.status]}}</div>
             <div class="right">
-              <span style="display: inline-block;margin-left:20px" v-if="order.status == 1" @click.stop="confirmOrder(order)">确认</span>
-              <span style="display: inline-block;margin-left:20px" v-if="order.status == 1" @click.stop="cancelOrder(order)">取消</span>
-              <span style="display: inline-block;margin-left:20px" v-if="order.status == 3" @click.stop="finishOrder(order)">确认收货</span>
+              <span style="display: inline-block;margin-left:20px" v-if="order.status == 3" @click.stop="finishOrder(order)">确认领取</span>
             </div>
           </div>
         </template>
@@ -52,10 +44,7 @@
         </div>
       </el-collapse-item>
     </el-collapse>
-
     <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
-
-
   </d2-container>
 </template>
 
@@ -64,96 +53,60 @@ import js from './mixins/index'
 import dayjs from 'dayjs'
 import { mapActions } from 'vuex'
 export default {
-    name: 'orderConfig',
-    mixins: [
-      js
-    ],
-    data(){
-        return{
-          staffNo: '',
-          staffName: '',
-          orderStatus: '',
-          orderList: [],
-          pagination: {
-            currentPage: 1,
-            pageSize: 10,
-            total: 0
-          }
-        }
-    },
-    methods: {
-      async load () {
-        const db = await this.database({ user: true })
-        const userInfo = db.get('user_info').value()
-        this.userInfo = userInfo
-        this.getOrderList()
-      },
-      // 确认订单
-      confirmOrder (order) {
-        this.$confirm('确定通过此订单?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          console.log(order)
-          const data = {
-            orderId: order.id,
-            status: 3,
-            staffNo: this.userInfo.staffNo,
-            staffName: this.userInfo.name
-          }
-          this.$api.EDIT_ORDER_STATUS(data).then((res) => {
-            this.$message.success('订单已确认')
-            this.getOrderList()
-            // 发送消息提醒员工可领取
-            const userData = {
-              userId: '100297'
-            }
-            this.$api.SEND_MESSAGE(userData).then(res => {
-              console.log('发送成功')
-              console.log(res)
-            })
-          })
-        }).catch(() => {
-          console.log('取消确认')
-        });
-      },
-
-      // 取消订单
-      cancelOrder (order) {
-        this.$confirm('确定取消此订单?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          console.log(this.userInfo)
-          const data = {
-            orderId: order.id,
-            status: 2,
-            staffNo: this.userInfo.staffNo,
-            staffName: this.userInfo.name
-          }
-          this.$api.EDIT_ORDER_STATUS(data).then((res) => {
-            this.$message.success('订单已取消')
-            this.getOrderList()
-          })
-        }).catch(() => {
-          console.log('取消确认')
-        });
-      },
-
-      handleSizeChange (val) {
-        this.pagination.pageSize = val
-        this.getOrderList()
-      },
-      handleCurrentChange (val) {
-        this.pagination.currentPage = val
-        this.getOrderList()
+  name: 'othersOrderList',
+  mixins: [
+    js
+  ],
+  data () {
+    return {
+      dayjs,
+      orderStatus: '',
+      orderList: [],
+      pagination: {
+        currentPage: 1,
+        pageSize: 10,
+        total: 0
       }
-    },
-    created(){
-      this.load()
     }
+  },
+  methods: {
+    ...mapActions('d2admin/db', [
+      'database',
+      'databaseClear'
+    ]),
+      
+    async load () {
+      const db = await this.database({ user: true })
+      const userInfo = db.get('user_info').value()
+      this.creator = userInfo.staffNo
+      this.creatorName = userInfo.name
+      this.userInfo = userInfo
+      this.getOrderList()
+    },
+    // 获取订单信息
+    getOrderList (page) {
+      if (page) {
+        this.pagination.currentPage = page
+      }
+      let data = {
+        creator: this.creator,
+        creatorName: this.creatorName,
+        page: this.pagination.currentPage,
+        pageSize: this.pagination.pageSize,
+        year: this.year ? dayjs(this.year).year() : '',
+        status: this.orderStatus
+      }
+
+      this.$api.GET_OTHERS_ORDER(data).then( res => {
+        this.orderList = res.list
+        console.log(this.orderList.length)
+        this.pagination.total = res.count
+      })
+    }
+  },
+  created(){
+    this.load()
+  }
 }
 </script>
 
@@ -245,12 +198,7 @@ export default {
   justify-content: space-between;
 }
 .title-wrapper .left{
-  width: 500px;
-  flex-grow: 0;
-  flex-shrink: 0;
-}
-.title-wrapper .staff-no{
-  width: 100px;
+  width: 600px;
   flex-grow: 0;
   flex-shrink: 0;
 }
@@ -260,7 +208,7 @@ export default {
   flex-shrink: 0;
 }
 .title-wrapper .right{
-  width: 100px;
+  width: 200px;
   flex-grow: 0;
   flex-shrink: 0;
   margin-right: 10px;
@@ -285,16 +233,5 @@ export default {
 .price-wrapper .want-add:hover{
   cursor: pointer;
   color: red;
-}
-.cus-badge{
-  font-size: 10px;
-  line-height: 12px;
-  background: red;
-  color: #ffffff;
-  border-radius: 5px;
-  padding: 0 4px;
-  font-style: normal;
-  margin-left: 6px;
-  font-weight: normal;
 }
 </style>

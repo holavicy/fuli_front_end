@@ -56,10 +56,19 @@ const frameIn = [
         path: 'orderList',
         name: 'orderList',
         meta: {
-          title: '订单列表',
+          title: '我的订单',
           auth: true
         },
         component: _import('pages/order/orderList')
+      },
+      {
+        path: 'othersOrderList',
+        name: 'othersOrderList',
+        meta: {
+          title: '代领订单',
+          auth: true
+        },
+        component: _import('pages/order/othersOrderList')
       },
       // 订单列表（管理员）
       {
@@ -70,6 +79,16 @@ const frameIn = [
           auth: true
         },
         component: _import('pages/order/orderConfig')
+      },
+      // 员工领取情况统计
+      {
+        path: 'staffSummary',
+        name: 'staffSummary',
+        meta: {
+          title: '员工领取情况',
+          auth: true
+        },
+        component: _import('pages/chat/staff')
       },
       // 系统 前端日志
       {

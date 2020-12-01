@@ -63,11 +63,43 @@
       </div>
     </div>
 
+    <!-- 当前登录人的代领列表 -->
+    <el-card class="other-supply-wrapper" v-if="supplyList.length>0">
+      <div slot="header" class="clearfix">
+        <span>您可以帮以下同事代领生日礼包：</span>
+      </div>
+       <el-table :data="supplyList" style="width: 100%" size="mini">
+        <el-table-column prop="staff_name" label="姓名" width="180"></el-table-column>
+        <el-table-column label="礼包状态" width="180">
+          <template slot-scope="scope">
+            <span v-if="scope.row.supply_order_list.length == 0">未申请</span>
+            <span v-else>{{orderStatusDict[scope.row.supply_order_list[0].status]}}</span></template>
+        </el-table-column>
+        <el-table-column label="操作" width="180">
+          <template slot-scope="scope">
+            <el-link type="primary" v-if="scope.row.supply_order_list.length == 0" @click="toGifts()">立即申请</el-link>
+            <el-link type="primary" v-else @click="toOrder()">查看订单详情</el-link></template>
+        </el-table-column>
+      </el-table-column>
+    </el-table>
+    </el-card>
+
+    <!-- 意见收集卡片 -->
+    <el-card class="suggest-wrapper">
+      <div slot="header" class="clearfix">
+        <span>为了提供更好的生日福利，诚邀您参与礼包意见收集，我们会根据您的建议，逐步优化生日礼包，谢谢您的参与！<i class="tip">注：最多选择3个选项</i></span>
+        <el-button style="float: right; padding: 3px 0" type="text" @click="submitSuggest()">提交意见</el-button>
+      </div>
+      <el-checkbox-group v-model="checkedSuggests" :min="1" :max="3" class="cus-check-group" @change="checkChange()">
+        <el-checkbox class="cus-checkbox" v-for="suggestItem in suggestDict" :label="suggestItem.id" :key="suggestItem.id">{{suggestItem.name}}</el-checkbox>
+      </el-checkbox-group>
+      <el-input v-if="showInput" class="cus-input" v-model="otherSuggest" placeholder="请输入内容" size="mini"></el-input>
+    </el-card>
+
     <el-dialog
       title="提示"
       :visible.sync="dialogVisible"
-      width="30%"
-      :before-close="handleClose">
+      width="30%">
       <span>您确定已领取今年的生日礼包？</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">取 消</el-button>
@@ -86,7 +118,18 @@ export default {
       userInfo: {},
       today: new Date(),
       orderList: [],
-      dialogVisible: false
+      dialogVisible: false,
+      checkedSuggests: [],
+      suggestDict: [],
+      otherSuggest: '',
+      showInput: false,
+      supplyList: [],
+      orderStatusDict: {
+        1: '待管理员确认',
+        2: '已取消',
+        3: '待领取',
+        4: '已领取'
+      }
     }
   },
 
@@ -118,8 +161,8 @@ export default {
     async load () {
       const db = await this.database({ user: true })
       this.userInfo = db.get('user_info').value()
-      console.log(this.userInfo)
       this.getOrder()
+      this.getSupplyList()
     },
     // 获取订单
     getOrder () {
@@ -138,6 +181,10 @@ export default {
     toGifts () {
       this.$router.push('/giftBag')
     },
+    // 去代领订单列表页
+    toOrder () {
+      this.$router.push('/othersOrderList')
+    },
     // 确认领取生日礼包
     finishOrder () {
       this.dialogVisible = true
@@ -147,7 +194,8 @@ export default {
       const data = {
         orderId: this.orderList[0].id,
         status: 4,
-        staffNo: this.userInfo.staffNo
+        staffNo: this.userInfo.staffNo,
+        staffName: this.userInfo.name
       }
       this.dialogVisible = false
       this.$api.EDIT_ORDER_STATUS(data).then(res => {
@@ -159,11 +207,78 @@ export default {
     // 前往查看订单详情
     toOrders () {
       this.$router.push('/orderList')
+    },
+
+    // 获取所有的建议选项
+    getSuggestDict () {
+      this.$api.GET_SUGGEST_DICT({}).then(res => {
+        console.log(res)
+        this.suggestDict = res.list
+      })
+    },
+
+    checkChange () {
+      console.log(this.checkedSuggests)
+      let flag = false
+      this.checkedSuggests.forEach(item => {
+        console.log(item)
+        if (item == 9) {
+          flag = true
+          return
+        }
+      })
+      this.showInput = flag
+    },
+
+    submitSuggest () {
+      if (this.checkedSuggests.length == 0) {
+        this.$message.error('请至少选择一个意见')
+        return
+      }
+
+      if (this.showInput && !this.otherSuggest) {
+        this.$message.error('请输入其他建议')
+        return
+      }
+
+      console.log(this.checkedSuggests)
+      console.log(this.otherSuggest)
+
+      const data = {
+        staffNo: this.userInfo.staffNo,
+        staffName: this.userInfo.name,
+        suggestIds: this.checkedSuggests.join(','),
+        text: this.otherSuggest
+      }
+
+      this.$api.CREATE_SUGGEST(data).then(res => {
+        this.$message.success('提交成功')
+        this.checkedSuggests = []
+        this.otherSuggest = ''
+        this.showInput = false
+      })
+    },
+
+    // 获取当前员工的代领列表
+    getSupplyList () {
+      const data = {
+        page: '',
+        pageSize: '',
+        staffNo: '',
+        year: this.year,
+        supplyStaffNo: this.userInfo.staffNo
+
+      }
+      this.$api.GET_SUPPLY(data).then( res => {
+        console.log(res)
+        this.supplyList = res.list
+      })
     }
   },
 
   created () {
     this.load()
+    this.getSuggestDict()
   }
 }
 </script>
@@ -200,7 +315,7 @@ export default {
   }
 
   .gift-bag-info{
-    margin-top: 40px;
+    margin-top: 30px;
     .wrapper{
       display: flex;
       flex-direction: column;
@@ -226,4 +341,43 @@ export default {
       }
     }
   } 
+
+  .suggest-wrapper{
+    font-size: 14px;
+    margin-top: 60px;
+    padding-bottom: 40px;
+    .title{
+      border-left: 2px solid #409EFF;
+      line-height: 24px;
+      padding-left: 12px;
+      margin-bottom: 10px;
+    }
+    .tip{
+      margin-left: 12px;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 20px;
+      font-style: normal;
+    }
+    .cus-check-group{
+      display: flex;
+      flex-direction: column;
+      margin-left: 12px;
+
+      .cus-checkbox{
+        margin-top: 10px;
+      }
+    }
+
+    .cus-input{
+      margin-left: 32px;
+      width: 200px;
+      margin-top: 10px;
+    }
+  }
+
+  .other-supply-wrapper {
+    margin-top: 40px;
+  }
+
 </style>

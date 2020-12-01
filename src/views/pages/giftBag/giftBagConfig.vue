@@ -10,13 +10,17 @@
                     <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
                 </el-select>
             </div>
-            <el-button size="mini" type="primary" @click="getGifts()">查询</el-button>
+            <el-button size="mini" type="primary" @click="getGifts(1)">查询</el-button>
             <el-button size="mini" type="danger" plain @click="addGoods()">新增礼包</el-button>
         </div>
     </template>
-    <el-table :data="giftBagList" :span-method="objectSpanMethod" border style="width: 100%" height="320" size="mini">
+    <el-table :data="giftBagList" :span-method="objectSpanMethod" border style="width: 100%" height="390" size="mini">
         <el-table-column prop="index" width="40"></el-table-column>
-        <el-table-column prop="giftBagName" label="礼包名称" width="180"></el-table-column>
+        <el-table-column label="礼包名称" width="180">
+          <template slot-scope="scope">
+            {{scope.row.giftBagName}}<i class="cus-badge" v-if="scope.row.limitGoodsNum > 0">{{scope.row.goodsLength}}选{{scope.row.limitGoodsNum}}</i>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="商品名称" width="180"></el-table-column>
         <el-table-column prop="imageUrl" label="图片" width="180">
           <template slot-scope="scope">
@@ -25,7 +29,7 @@
         </el-table-column>
         <el-table-column label="库存" width="100">
           <template slot-scope="scope">
-            <span>{{ scope.row.num>0?scope.row.num + "(" + scope.row.unit + ")":"暂无库存" }}</span>
+            <span :class="{'no-num':scope.row.num<=0}">{{ scope.row.num>0?scope.row.num + "（" + scope.row.unit +"）":"暂无库存" }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="price" label="单价/元" width="100"></el-table-column>
@@ -60,13 +64,14 @@
         </el-form>
         <div slot="footer" class="dialog-footer">
             <el-button @click="dialogFormVisible = false">取 消</el-button>
-            <el-button type="primary" @click="submitNewGoods">确 定</el-button>
+            <el-button type="primary" @click="submitNewGoods()">确 定</el-button>
         </div>
     </el-dialog>
   </d2-container>
 </template>
 
 <script>
+import { mapActions } from 'vuex'
 export default {
   name: 'giftBagConfig',
   data () {
@@ -99,6 +104,7 @@ export default {
         limitGoodsNum: 0,
         goods: []
       },
+      userInfo: {},
       transferData: [],
       selectedGoodsList: [],
       filterMethod (query, item) {
@@ -107,13 +113,21 @@ export default {
     }
   },
   methods: {
+    ...mapActions('d2admin/db', [
+      'database',
+      'databaseClear'
+    ]),
+    async load () {
+      const db = await this.database({ user: true })
+      this.userInfo = db.get('user_info').value()
+    },
     // 删除商品
     handleDelete (index, row) {
       console.log(row)
       const data = {
         id: row.giftBagId,
         status: 2,
-        staffNo: '100297'
+        staffNo: this.userInfo.staffNo
       }
       this.$api.UPDATE_GIFTBAG_STATUS(data).then((res) => {
         this.$message({
@@ -153,10 +167,24 @@ export default {
     },
     // 提交礼包数据
     submitNewGoods () {
-      this.dialogFormVisible = false
       console.log(this.newGiftBag)
       let data = this.newGiftBag
-      data.staffNo = '100297'
+      if (!data.name) {
+        this.$message.error('请输入礼包名称')
+        return
+      }
+
+      if (data.goods.length === 0) {
+        this.$message.error('请选择礼包中的商品')
+        return
+      }
+
+      if (data.limitGoodsNum >= data.goods.length) {
+        this.$message.error('数量限制必须小于商品的个数')
+        return
+      }
+      this.dialogFormVisible = false
+      data.staffNo = this.userInfo.staffNo
       if (this.newGiftBag.id) {
         console.log('编辑')
         this.$api.EDIT_GIFT_BAG(data).then(res => {
@@ -168,10 +196,9 @@ export default {
         this.$api.ADD_GIFT_BAG(data).then(res => {
           console.log(res)
           this.$message.success('新增礼包成功！')
-          this.getGifts()
+          this.getGifts(1)
         })
       }
-      
     },
     // 格式化表格数据
     formatGiftBagData (oriData) {
@@ -183,6 +210,8 @@ export default {
             goodsItem.giftBagId = ele.id
             goodsItem.giftBagName = ele.name
             goodsItem.giftBagStatus = ele.status
+            goodsItem.goodsLength = ele.goods.length
+            goodsItem.limitGoodsNum = ele.limitGoodsNum
             goodsItem.index = i + 1
             if (index === 0) {
               goodsItem.rowspan = true
@@ -255,7 +284,10 @@ export default {
       
     },
     // 获取礼包
-    getGifts () {
+    getGifts (page) {
+      if (page) {
+        this.pagination.currentPage = page
+      }
       const data = {
         page: this.pagination.currentPage,
         pageSize: this.pagination.pageSize,
@@ -269,6 +301,7 @@ export default {
         this.pagination.total = res.count
         this.giftBagOriList = [...res.list]
         this.giftBagList = this.formatGiftBagData(this.giftBagOriList)
+        console.log(this.giftBagList)
       })
     },
     handleSizeChange (val) {
@@ -285,7 +318,7 @@ export default {
       const data = {
         id: giftBag.giftBagId,
         status: giftBag.giftBagStatus,
-        staffNo: '100297'
+        staffNo: this.userInfo.staffNo
       }
       this.$api.UPDATE_GIFTBAG_STATUS(data).then((res) => {
         this.$message({
@@ -297,6 +330,7 @@ export default {
     }
   },
   created () {
+    this.load()
     this.getGifts()
   }
 }
@@ -322,5 +356,18 @@ export default {
 
 .margin-right-20{
     margin-right: 20px;
+}
+.cus-badge{
+  font-size: 10px;
+  line-height: 12px;
+  background: red;
+  color: #ffffff;
+  border-radius: 5px;
+  padding: 0 4px;
+  font-style: normal;
+  margin-left: 6px;
+}
+.no-num{
+  color: #f56c6c;
 }
 </style>

@@ -1,5 +1,5 @@
-import { throttle } from 'lodash'
-import { mapState } from 'vuex'
+import { throttle, concat, uniq } from 'lodash'
+import { mapState, mapActions } from 'vuex'
 import menuMixin from '../mixin/menu'
 import { createMenu } from '../libs/util.menu'
 
@@ -27,7 +27,7 @@ export default {
             mode="horizontal"
             defaultActive={ this.active }
             onSelect={ this.handleMenuSelect }>
-            { this.header.map(menu => createMenu.call(this, h, menu)) }
+            { this.headerRole.map(menu => createMenu.call(this, h, menu)) }
           </el-menu>
         </div>
       </div>
@@ -60,6 +60,8 @@ export default {
   },
   data () {
     return {
+      headerRole: [],
+      roles: [],
       active: '',
       isScroll: false,
       scrollWidth: 0,
@@ -77,6 +79,30 @@ export default {
     }
   },
   methods: {
+    ...mapActions('d2admin/db', [
+      'database',
+      'databaseClear'
+    ]),
+    async load () {
+      const db = await this.database({ user: true })
+      const userInfo = db.get('user_info').value()
+      this.roles = userInfo.roles
+      this.headerRole = this.supplementPath(this.header)
+    },
+    supplementPath (menu) {
+      return menu.map(e => ({
+        ...e,
+        show: e.roles ? this.checkDupl(e.roles, this.roles) : true,
+        ...e.children ? {
+          children: this.supplementPath(e.children)
+        } : {}
+      }))
+    },
+   
+    checkDupl (arrA, arrB) {
+      const arr = concat(arrA, arrB)
+      return uniq(arr).length !== arr.length;
+    },
     scroll (direction) {
       if (direction === 'left') {
         // 向右滚动
@@ -126,6 +152,7 @@ export default {
     }
   },
   mounted () {
+    this.load()
     // 初始化判断
     // 默认判断父元素和子元素的大小，以确定初始情况是否显示滚动
     this.checkScroll()

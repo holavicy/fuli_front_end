@@ -67,12 +67,20 @@ router.beforeEach(async (to, from, next) => {
               }
               api.DING_LOGIN(data)
                 .then(async (res) => {
+                  console.log(res)
+                  let roles = []
+                  res.roles.forEach(role => {
+                    if (role.id == '1741844343') {
+                      roles.push('admin')
+                    }
+                  })
                   let user_info = {
                     'staffNo': res.jobnumber,
                     'avatar': res.avatar,
                     'name': res.name,
                     'mobile': res.mobile,
-                    'postition': res.extattr['position']
+                    'postition': res.extattr['position'],
+                    'roles': roles
                   }
                   let nc_data = {
                     code: res.jobnumber

@@ -12,7 +12,7 @@
                 </el-option>
               </el-select>
             </div>
-            <el-button size="mini" type="primary" @click="getOrderList()">查询</el-button>
+            <el-button size="mini" type="primary" @click="getOrderList(1)">查询</el-button>
         </div>
     </template>
     <el-collapse accordion>
@@ -23,6 +23,7 @@
                 {{index+1}}、
                 <span style="font-weight: bold">{{order.year}}——{{order.giftName}}</span>
                 <span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</span>
+                <span class="cus-badge" v-if="order.creatorNo != order.staffNo && order.creatorName">由{{order.creatorName.trim()}}代领</span>
             </div>
             <div class="status">{{orderStatusDict[order.status]}}</div>
             <div class="right">
@@ -67,40 +68,9 @@ export default {
       }
     }
   },
-  methods: {
-    // 确认收货
-    finishOrder (order) {
-      this.$confirm('确定已领取此生日礼包?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-         console.log(order)
-          const data = {
-            orderId: order.id,
-            status: 4,
-            staffNo: '100297'
-          }
-          this.$api.EDIT_ORDER_STATUS(data).then((res) => {
-            this.$message.success('礼包领取完成')
-            this.getOrderList()
-          })
-      }).catch(() => {
-        console.log('取消确认收货')
-      })   
-    },
-    handleSizeChange (val) {
-      this.pagination.pageSize = val
-      this.getOrderList()
-    },
-    handleCurrentChange (val) {
-      this.pagination.currentPage = val
-      this.getOrderList()
-    }
-  },
 
   created(){
-    this.getOrderList()
+    this.load()
   }
 }
 </script>
@@ -223,5 +193,17 @@ export default {
 .price-wrapper .want-add:hover{
   cursor: pointer;
   color: red;
+}
+
+.cus-badge{
+  font-size: 10px;
+  line-height: 12px;
+  background: red;
+  color: #ffffff;
+  border-radius: 5px;
+  padding: 0 4px;
+  font-style: normal;
+  margin-left: 6px;
+  font-weight: normal;
 }
 </style>

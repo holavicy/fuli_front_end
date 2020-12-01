@@ -1,0 +1,245 @@
+<template>
+  <d2-container>
+    <template slot="header">
+        <div class="action-wrapper">
+            <div class="filter-item"><span>工号：</span> <el-input size="mini" placeholder="请输入内容" v-model="staffNoSearch"></el-input></div>
+            <div class="filter-item"><span>姓名：</span> <el-input size="mini" placeholder="请输入内容" v-model="name"></el-input></div>
+            <div class="filter-item"><span>领取年份：</span><el-date-picker size="mini" v-model="getYear" type="year" placeholder="请选择"></el-date-picker></div>
+            <div class="filter-item">
+                <span>领取状态： </span>
+                <el-select size="mini" v-model="getStatus" placeholder="请选择">
+                    <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
+                </el-select>
+            </div>
+            <el-button size="mini" type="primary" @click="getAllUsers()">查询</el-button>
+            <!-- <el-button size="mini" type="primary" plain>导出</el-button> -->
+        </div>
+    </template>
+    <el-table :data="goodsList" border style="width: 100%" size="mini" v-loading="loading">
+        <el-table-column type="index"></el-table-column>
+        <el-table-column label="姓名" width="180">
+          <template slot-scope="scope">
+            {{scope.row.NAME}}
+            <i class="cus-badge" v-if="scope.row.isOthers == '是'">由{{scope.row.othersName}}代领</i>
+          </template>
+        </el-table-column>
+        <el-table-column prop="CODE" label="工号"></el-table-column>
+        <el-table-column prop="BIRTHDATE" label="出生日期"></el-table-column>
+        <el-table-column prop="ZZDATE" label="转正日期"></el-table-column>
+        <el-table-column label="是否领取" width="100">
+          <template slot-scope="scope">
+                {{scope.row.GOTNUM>0?'是':'否'}}
+            </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180">
+            <template slot-scope="scope">
+                <el-link type="primary" @click="canOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '否' && (dayjs(getYear).format('YYYY') == year || !getYear)">设置他人代领</el-link>
+                <el-link type="primary" @click="cancelOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '是' && (dayjs(getYear).format('YYYY') == year || !getYear)">取消代领</el-link>
+            </template>
+        </el-table-column>
+    </el-table>
+    <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
+
+  </d2-container>
+</template>
+
+<script>
+import dayjs from 'dayjs'
+import * as dd from 'dingtalk-jsapi'
+import { mapActions } from 'vuex'
+export default {
+  name: 'staff',
+  data () {
+    return {
+      today: new Date(),
+      dayjs,
+      loading: false,
+      pagination: {
+        currentPage: 1,
+        pageSize: 10,
+        total: 0
+      },   
+      staffNoSearch: '',
+      name: '',
+      getStatus: '',
+      getYear: this.year,
+      options: [{
+        label: '全部',
+        value: ''
+      }, {
+        label: '已领取',
+        value: 1
+      }, {
+        label: '未领取',
+        value: 2
+      }],
+      formLabelWidth: '120px',
+      goodsList: [],
+      userInfo: {}
+    }
+  },
+  computed: {
+    year: function () {
+      return this.today.getFullYear()
+    }
+  },
+  methods: {
+    ...mapActions('d2admin/db', [
+      'database',
+      'databaseClear'
+    ]),
+    async load () {
+      const db = await this.database({ user: true })
+      this.userInfo = db.get('user_info').value()
+      console.log(this.userInfo)
+    },
+
+    // 获取商品列表
+    getAllUsers (page) {
+      this.loading = true
+      if (page) {
+        this.pagination.currentPage = page
+      }
+      let data = {
+        staffNo: this.staffNoSearch,
+        name: this.name,
+        getStatus: this.getStatus,
+        page: this.pagination.currentPage,
+        pageSize: this.pagination.pageSize,
+        getYear: this.getYear ? dayjs(this.getYear).endOf('year').format('YYYY-M-D') : dayjs(this.today).endOf('year').format('YYYY-M-D')
+      }
+      this.$api.GET_USER_LIST(data).then((res) => {
+        this.loading = false
+        this.goodsList = res.list
+        this.pagination.total = res.count
+      })
+    },
+    handleSizeChange (val) {
+      this.pagination.pageSize = val
+      this.getAllUsers()
+    },
+    handleCurrentChange (val) {
+      this.pagination.currentPage = val
+      this.getAllUsers()
+    },
+    canOthersGet (index, user) {
+      console.log(user)
+      console.log('start')
+      const url = 'http://127.0.0.1:8080/'
+      this.$api.JASPI_CONFIG({url: url}).then((res) => {
+        console.log(res)
+        dd.config({
+          agentId: res.agentId,
+          corpId: res.corpId, //必填，企业ID
+          timeStamp: res.timeStamp, // 必填，生成签名的时间戳
+          nonceStr: res.nonceStr, // 必填，生成签名的随机串
+          signature: res.signature, // 必填，签名
+          jsApiList: ['biz.contact.complexPicker'] // 必填，需要使用的jsapi列表，注意：不要带dd。
+        })
+        dd.ready(() => {
+          dd.biz.contact.complexPicker({
+            "title": "选择申请人",
+            "corpId": "dingcd0f5a2514db343b35c2f4657eb6378f",
+            "multiple": false,
+            "limitTips": "超出了",
+            "maxUsers": 1,
+            "pickedUsers": [],
+            "pickedDepartments": [],
+            "disabledUsers": [],
+            "disabledDepartments": [],
+            "requiredUsers": [],
+            "requiredDepartments": [],
+            "appId": 927117753,
+            "permissionType": "GLOBAL",
+            "responseUserOnly": false,
+            "startWithDepartmentId": 0,
+            onSuccess: (result) => {
+              this.$api.GET_INFO_BY_USER_ID({userId: result.users[0].emplId}).then(r => {
+                console.log(r)
+                let data = {
+                  othersName: r.name,
+                  othersStaffNo: r.jobnumber,
+                  staffNo: user.CODE,
+                  staffName: user.NAME,
+                  year: this.year,
+                  creator: this.userInfo.staffNo
+                }
+                this.$api.CREATE_SUPPLY(data).then(res => {
+                  this.$message.success('设置成功')
+                  this.getAllUsers()
+                  const userData = {
+                    userId: r.jobnumber,
+                    msg: '管理员已设置您帮助他人代领生日福利礼包，快去帮忙领取吧'
+                  }
+                  this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
+                    console.log('发送成功')
+                    console.log(res)
+                  })
+                })
+              })
+            },
+            onFail : (err) => {}
+        });
+        })
+      })
+    },
+    cancelOthersGet (index, user) {
+      console.log(user.CODE)
+      const data = {
+        staffNo: user.CODE,
+        year: this.year
+      }
+      this.$api.CANCEL_SUPPLY(data).then((res) => {
+        this.$message.success('取消代领成功')
+        this.getAllUsers()
+        const userData = {
+          userId: user.othersStaffNo,
+          msg: '管理员已取消您帮助他人代领生日礼包，点击查看详情'
+        }
+        this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
+          console.log('发送成功')
+          console.log(res)
+        })
+      })
+    }
+  },
+
+  created () {
+    this.load()
+    this.getAllUsers()
+  }
+}
+</script>
+
+<style scoped>
+.action-wrapper{
+    display: flex;
+    font-size: 12px;
+}
+
+.action-wrapper .filter-item{
+    width: 260px;
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+}
+
+.action-wrapper .filter-item span{
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.margin-right-20{
+    margin-right: 20px;
+}
+
+.cus-badge{
+  font-size: 10px;
+  line-height: 12px;
+  background: red;
+  color: #ffffff;
+  border-radius: 5px;
+  padding: 0 4px;
+  font-style: normal;
+}
+</style>

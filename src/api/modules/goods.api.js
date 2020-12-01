@@ -42,5 +42,29 @@ export default ({ request }) => ({
       method: 'POST',
       data
     })
+  },
+  // 根据库存id更新库存信息
+  UPDATE_STOCK_CHANGE_DETAIL (data) {
+    return request({
+      url: '/updateStockChangeDetail',
+      method: 'POST',
+      data
+    })
+  },
+  // 员工想要某商品
+  LIKE (data) {
+    return request({
+      url: '/like',
+      method: 'POST',
+      data,
+    })
+  },
+  // 删除库存明细
+  DELETE_STOCK_RECORD (data) {
+    return request({
+      url: '/deleteStock',
+      method: 'POST',
+      data,
+    })
   }
 })

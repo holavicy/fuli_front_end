@@ -9,14 +9,20 @@
                     <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
                 </el-select>
             </div>
-            <el-button size="mini" type="primary" @click="getAllGoods()">查询</el-button>
-            <el-button size="mini" type="primary" plain>增量导入</el-button>
-            <el-button size="mini" type="danger" plain @click="addGoods">新增</el-button>
+            <el-button size="mini" type="primary" @click="getAllGoods(1)">查询</el-button>  
+            <el-upload action="default" :before-upload="beforeUploadGoods" :http-request="importFileGoods" :show-file-list="false" style="margin: 0 10px">
+              <el-button size="mini" type="primary" plain>增量导入</el-button>
+            </el-upload>
+            <el-button size="mini" type="danger" plain @click="addGoods()">新增</el-button>
         </div>
     </template>
     <el-table :data="goodsList" border style="width: 100%" size="mini">
-        <el-table-column type="index"></el-table-column>
-        <el-table-column prop="name" label="名称" width="180"></el-table-column>
+        <el-table-column prop="id" label="ID" width="60"></el-table-column>
+        <el-table-column label="名称" width="180">
+          <template slot-scope="scope">
+            {{scope.row.name}}<i class="cus-badge" v-if="scope.row.likeStaffNum > 0 && scope.row.likeNum > 0">被{{scope.row.likeStaffNum}}人喜欢{{scope.row.likeNum}}次</i>
+          </template>
+        </el-table-column>
         <el-table-column prop="image_url" label="图片" width="180">
           <template slot-scope="scope">
             <el-image style="width: 60px; height: 60px" :src="scope.row.image_url"></el-image>
@@ -67,37 +73,47 @@
         </el-form>
         <div slot="footer" class="dialog-footer">
             <el-button @click="dialogFormVisible = false">取 消</el-button>
-            <el-button type="primary" @click="submitNewGoods">确 定</el-button>
+            <el-button type="primary" @click="submitNewGoods()">确 定</el-button>
         </div>
     </el-dialog>
 
     <!-- 商品库存变化明细 -->
-    <el-dialog :title="goodsStockName" :visible.sync="dialogTableVisible">
+    <el-dialog :title="goodsStockName" :visible.sync="dialogTableVisible" width="70%">
       <el-button size="mini" type="primary" @click="changeGoodsStock()">修改商品库存</el-button>
       <el-table :data="stockChangeList" size="mini">
-        <el-table-column label="变化类型" width="100">
+        <el-table-column label="变化类型" width="70">
           <template slot-scope="scope">
             {{scope.row.change_type === 1 ? '入库' : scope.row.change_type === 2 ? '出库' : ''}}
           </template>
         </el-table-column>
-        <el-table-column property="num" label="变化数量" width="100"></el-table-column>
+        <el-table-column property="num" label="变化数量" width="80"></el-table-column>
         <el-table-column property="change_des" label="变化说明"></el-table-column>
-        <el-table-column label="操作日期" width="150">
+        <el-table-column label="操作日期" width="140">
           <template slot-scope="scope">
             {{dayjs(scope.row.create_time).subtract(8, 'hour').format('YYYY-M-D HH:mm:ss')}}
           </template>
         </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template slot-scope="scope">
+            <el-button type="primary" icon="el-icon-edit" circle @click="editStock(scope.$index, scope.row)" size="mini"></el-button>
+            
+            <el-tooltip class="item" effect="dark" content="点击将立即删除此条记录，请谨慎操作" placement="top-start">
+              <el-button type="danger" icon="el-icon-delete" circle @click="deleteStock(scope.row)" size="mini"></el-button>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        
       </el-table>
       <el-pagination @size-change="handleSizeChangeStock" @current-change="handleCurrentChangeStock" :current-page="paginationStock.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="paginationStock.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="paginationStock.total" style="margin-top:10px"></el-pagination>
       <el-dialog width="30%" title="修改库存" :visible.sync="innerVisible" append-to-body>
-         <div class="filter-item">
+         <div class="filter-item margin-bottom-10">
             <span>变化类型： </span>
             <el-select size="mini" v-model="stockChangeType" placeholder="请选择">
               <el-option v-for="item in changeTypeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
             </el-select>
         </div>
-        <div class="filter-item"><span>变化数量：</span> <el-input size="mini" placeholder="请输入内容" v-model="stockChangeNum" style="width: 100px"></el-input></div>
-        <div class="filter-item"><span>变化说明：</span> <el-input size="mini" placeholder="请输入内容" v-model="stockChangeDesc" style="width: 120px"></el-input></div>
+        <div class="filter-item margin-bottom-10"><span>变化数量：</span> <el-input size="mini" placeholder="请输入内容" v-model="stockChangeNum" style="width: 100px"></el-input></div>
+        <div class="filter-item margin-bottom-10"><span>变化说明：</span> <el-input size="mini" placeholder="请输入内容" v-model="stockChangeDesc" style="width: 140px"></el-input></div>
         <el-button size="mini" type="primary" @click="submitStockChange()">确定</el-button>
       </el-dialog>
     </el-dialog>
@@ -106,6 +122,7 @@
 
 <script>
 import dayjs from 'dayjs'
+import { mapActions } from 'vuex'
 export default {
   name: 'goodsConfig',
   data () {
@@ -154,25 +171,39 @@ export default {
         imageUrl: ''
       },
       file: null,
+      goodsFile: null,
       dialogVisible: false,
       goodsStockId: '',
       goodsStockName: '',
       stockChangeType: 1,
       stockChangeNum: 1,
       stockChangeDesc: '',
-      innerVisible: false
+      innerVisible: false,
+      userInfo: {}
     }
   },
   methods: {
+    ...mapActions('d2admin/db', [
+      'database',
+      'databaseClear'
+    ]),
+    async load () {
+      const db = await this.database({ user: true })
+      this.userInfo = db.get('user_info').value()
+      console.log(this.userInfo)
+    },
     beforeUpload (file) {
       this.file = file
+    },
+    beforeUploadGoods (f) {
+      this.goodsFile = f
     },
     // 上传图片
     importFile () {
       const _this = this
       let fileData = new FormData()
       fileData.append('file', _this.file)
-      fileData.append('staffNo', 100297)
+      fileData.append('staffNo', _this.userInfo.staffNo)
       const url = '/uploadImage'
       this.uploadFile(url, fileData).then((res) => {
         if (res.data.code === 0) {
@@ -185,11 +216,38 @@ export default {
         console.log(rej)
       })
     },
+    // 导入商品
+    importFileGoods () {
+      const _this = this
+      let fileData = new FormData()
+      fileData.append('file', _this.goodsFile)
+      fileData.append('staffNo', _this.userInfo.staffNo)
+      const url = '/importGoods'
+      this.uploadFile(url, fileData).then((res) => {
+        if (res.data.code === 0) {
+          _this.$message.success('导入成功')
+          this.getAllGoods(0)
+        } else {
+          console.log(res)
+          _this.$message.error(res.data.errorMsg)
+        }
+      }, (rej) => {
+        console.log(rej)
+      })
+    },
     // 新增或编辑商品点击确定提交数据
     submitNewGoods () {
+      if (!this.newGoods.name) {
+        this.$message.error('请输入商品名称')
+        return
+      }
+      if (!this.newGoods.id && !this.newGoods.num) {
+        this.$message.error('请输入商品数量')
+        return
+      }
       this.dialogFormVisible = false
       let data = this.newGoods
-      data.staffNo = '100297'
+      data.staffNo = this.userInfo.staffNo
       const id = this.newGoods.id
       if (id) {
         // 编辑商品
@@ -199,6 +257,8 @@ export default {
             message: '编辑成功!'
           })
           this.getAllGoods()
+        }).catch( e => {
+          this.getAllGoods()
         })
       } else {
         this.$api.CREATE_GOODS(data).then((res) => {
@@ -206,17 +266,16 @@ export default {
             type: 'success',
             message: '新增成功!'
           })
-          this.getAllGoods()
+          this.getAllGoods(1)
         })
       }
     },
     // 删除商品
     handleDelete (index, row) {
-      console.log(row)
       const data = {
         id: row.id,
         status: 2,
-        staffNo: '100297'
+        staffNo: this.userInfo.staffNo
       }
       this.$api.UPDATE_GOODS_STATUS(data).then((res) => {
         this.$message({
@@ -224,6 +283,8 @@ export default {
           message: '删除商品成功!'
         })
         this.getAllGoods(1)
+      }).catch(e=>{
+        this.getAllGoods()
       })
     },
     // 新增商品
@@ -283,14 +344,16 @@ export default {
       const data = {
         id: goods.id,
         status: goods.status,
-        staffNo: '100297'
+        staffNo: this.userInfo.staffNo
       }
       this.$api.UPDATE_GOODS_STATUS(data).then((res) => {
         this.$message({
           type: 'success',
           message: '商品' + (goods.status === 1 ? '上架' : goods.status === 3 ? '下架' : '') + '成功!'
         })
-        this.getAllGoods(1)
+        this.getAllGoods()
+      }).catch( e => {
+        this.getAllGoods()
       })
     },
     // 展示库存明细弹框
@@ -322,29 +385,85 @@ export default {
       this.stockChangeType = 1
       this.stockChangeNum = 1
       this.stockChangeDesc = ''
+      this.stockRecordId = ''
     },
     submitStockChange () {
-      const data = {
-        goodsId: this.goodsStockId,
-        changeType: this.stockChangeType,
-        num: this.stockChangeNum,
-        desc: this.stockChangeDesc,
-        staffNo: '100297'
+      if (!this.stockChangeNum) {
+        this.$message.error('请输入变化数量')
+        return
       }
-      this.$api.ADD_STOCK_CHANGE_DETAIL(data).then((res) => {
-        this.$message({
-          type: 'success',
-          message: '修改库存成功！'
+      if (!this.stockChangeDesc) {
+        this.$message.error('请输入变化说明')
+        return
+      }
+      if (this.stockRecordId) {
+        console.log('编辑')
+        const data = {
+          stockId: this.stockRecordId,
+          changeType: this.stockChangeType,
+          num: this.stockChangeNum,
+          desc: this.stockChangeDesc,
+          staffNo: this.userInfo.staffNo
+        }
+
+        this.$api.UPDATE_STOCK_CHANGE_DETAIL(data).then((res) => {
+          this.$message({
+            type: 'success',
+            message: '修改库存成功！'
+          })
+          this.innerVisible = false
+          this.getStockRecordsById(this.goodsStockId)
+          this.getAllGoods()
         })
-        this.innerVisible = false
+      } else {
+        const data = {
+          goodsId: this.goodsStockId,
+          changeType: this.stockChangeType,
+          num: this.stockChangeNum,
+          desc: this.stockChangeDesc,
+          staffNo: this.userInfo.staffNo
+        }
+        this.$api.ADD_STOCK_CHANGE_DETAIL(data).then((res) => {
+          this.$message({
+            type: 'success',
+            message: '修改库存成功！'
+          })
+          this.innerVisible = false
+          this.getStockRecordsById(this.goodsStockId)
+          this.getAllGoods()
+        })
+      }
+      
+
+    },
+
+    // 修改库存记录
+    editStock (index, row) {
+      console.log(row)
+      this.stockRecordId = row.id
+      this.innerVisible = true
+      this.stockChangeType = row.change_type
+      this.stockChangeNum = row.num
+      this.stockChangeDesc = row.change_des
+    },
+
+    // 删除库存记录
+    deleteStock (row) {
+      const data = {
+        id: row.id,
+        staffNo: this.userInfo.staffNo
+      }
+
+      this.$api.DELETE_STOCK_RECORD(data).then((res) => {
+        this.$message.success('操作成功')
         this.getStockRecordsById(this.goodsStockId)
         this.getAllGoods()
       })
-
     }
   },
 
   created () {
+    this.load()
     this.getAllGoods()
   }
 }
@@ -363,12 +482,26 @@ export default {
     margin-right: 20px;
 }
 
+
 .action-wrapper .filter-item span{
     width: 60px;
     flex-shrink: 0;
 }
 
+.filter-item.margin-bottom-10{
+  margin-bottom: 10px;
+}
 .margin-right-20{
     margin-right: 20px;
+}
+.cus-badge{
+  font-size: 10px;
+  line-height: 12px;
+  background: red;
+  color: #ffffff;
+  border-radius: 5px;
+  padding: 0 4px;
+  font-style: normal;
+  margin-left: 6px;
 }
 </style>
