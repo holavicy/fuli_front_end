@@ -40,7 +40,8 @@ const menu = [
     icon: 'th-list',
     children: [
       { path: '/staffSummary', title: '员工领取情况', roles: ['admin'] }
-    ]
+    ],
+    roles: ['admin']
   }
 ]
 

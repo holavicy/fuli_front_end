@@ -3,7 +3,7 @@
     <template slot="header">
       <div class="user-info">
         <div class="left">
-          <img style="width: 100px; height: 100px" :src="userInfo.avatar"/>
+          <!-- <img style="width: 100px; height: 100px" :src="userInfo.avatar"/> -->
           <div>
             <p class="name">{{userInfo.name}}</p>
             <p>{{userInfo.staffNo}}</p>
@@ -24,12 +24,12 @@
         </div>
       </div>
       <div v-else>
-        <div v-if="thisYearBirthday >= userInfo.hiredate">
+        <div v-if="thisYearBirthday >= userInfo.hiredate || userInfo.JOBRANKCODE <= 4">
           <div v-if="isZBirthday" class="wrapper">
             <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
             <div class="desc">
               <div class="weight-info">您有一个生日礼包可以领取</div>
-              <div class="light-info">您有一个生日礼包可通过OA申请，快去领取吧~</div>
+              <div class="light-info">您有一个整生日福利可通过OA申请，快去领取吧~</div>
             </div>
           </div>
           <div v-else>
@@ -78,14 +78,14 @@
         <el-table-column label="操作" width="180">
           <template slot-scope="scope">
             <el-link type="primary" v-if="scope.row.supply_order_list.length == 0" @click="toGifts()">立即申请</el-link>
-            <el-link type="primary" v-else @click="toOrder()">查看订单详情</el-link></template>
+            <el-link type="primary" v-else @click="toOrder()">查看订单详情</el-link>
+          </template>
         </el-table-column>
-      </el-table-column>
-    </el-table>
+      </el-table>
     </el-card>
 
     <!-- 意见收集卡片 -->
-    <el-card class="suggest-wrapper">
+    <el-card class="suggest-wrapper" v-if="canSuggest">
       <div slot="header" class="clearfix">
         <span>为了提供更好的生日福利，诚邀您参与礼包意见收集，我们会根据您的建议，逐步优化生日礼包，谢谢您的参与！<i class="tip">注：最多选择3个选项</i></span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="submitSuggest()">提交意见</el-button>
@@ -129,7 +129,8 @@ export default {
         2: '已取消',
         3: '待领取',
         4: '已领取'
-      }
+      },
+      canSuggest: false
     }
   },
 
@@ -139,16 +140,12 @@ export default {
     },
 
     thisYearBirthday: function () {
-      return this.userInfo.birthday ? this.userInfo.birthday.replace(/^[0-9]{4}/g,this.year) : ''
+      return this.userInfo.birthday ? this.userInfo.birthday.replace(/^[0-9]{4}/g, this.year) : ''
     },
 
     isZBirthday: function () {
-      console.log('jisua')
-      console.log(this.userInfo.birthday)
-      console.log(/^[0-9]{4}/g.exec(this.userInfo.birthday))
       const oriYear = this.userInfo.birthday ? /^[0-9]{4}/g.exec(this.userInfo.birthday)[0] : 0
-      
-      const isZBirthday = (Number(this.year) - Number(oriYear)) % 10 === 0 ? true : false
+      const isZBirthday = (Number(this.year) - Number(oriYear) + 1) % 10 === 0 ? true : false
       return isZBirthday
     }
   },
@@ -163,6 +160,7 @@ export default {
       this.userInfo = db.get('user_info').value()
       this.getOrder()
       this.getSupplyList()
+      this.hasSuggested()
     },
     // 获取订单
     getOrder () {
@@ -174,7 +172,16 @@ export default {
         pageSize: 10
       }
       this.$api.GET_LIST(data).then(res => {
-        this.orderList = res.list
+        let list = res.list
+        let validList = []
+        if (list && list.length > 0) {
+          list.forEach(item => {
+            if (item.status != 2) {
+              validList.push(item)
+            }
+          })
+        }
+        this.orderList = validList
       })
     },
     // 申请福利
@@ -189,7 +196,6 @@ export default {
     finishOrder () {
       this.dialogVisible = true
     },
-
     finishOrderRes () {
       const data = {
         orderId: this.orderList[0].id,
@@ -203,22 +209,17 @@ export default {
         this.getOrder()
       })
     },
-
     // 前往查看订单详情
     toOrders () {
       this.$router.push('/orderList')
     },
-
     // 获取所有的建议选项
     getSuggestDict () {
       this.$api.GET_SUGGEST_DICT({}).then(res => {
-        console.log(res)
         this.suggestDict = res.list
       })
     },
-
     checkChange () {
-      console.log(this.checkedSuggests)
       let flag = false
       this.checkedSuggests.forEach(item => {
         console.log(item)
@@ -229,9 +230,8 @@ export default {
       })
       this.showInput = flag
     },
-
     submitSuggest () {
-      if (this.checkedSuggests.length == 0) {
+      if (this.checkedSuggests.length === 0) {
         this.$message.error('请至少选择一个意见')
         return
       }
@@ -240,9 +240,6 @@ export default {
         this.$message.error('请输入其他建议')
         return
       }
-
-      console.log(this.checkedSuggests)
-      console.log(this.otherSuggest)
 
       const data = {
         staffNo: this.userInfo.staffNo,
@@ -256,9 +253,9 @@ export default {
         this.checkedSuggests = []
         this.otherSuggest = ''
         this.showInput = false
+        this.hasSuggested()
       })
     },
-
     // 获取当前员工的代领列表
     getSupplyList () {
       const data = {
@@ -267,11 +264,20 @@ export default {
         staffNo: '',
         year: this.year,
         supplyStaffNo: this.userInfo.staffNo
-
       }
       this.$api.GET_SUPPLY(data).then( res => {
         console.log(res)
         this.supplyList = res.list
+      })
+    },
+    // 判断当前登录人今年是否已经提交过意见
+    hasSuggested () {
+      const data = {
+        staffNo: this.userInfo.staffNo
+      }
+      this.$api.GET_SUGGEST_RECORDS(data).then((res) => {
+        console.log(res)
+        this.canSuggest = !(res.list && res.list.length > 0)
       })
     }
   },
@@ -293,6 +299,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
+    height:100px;
 
     .left{
       display: flex;

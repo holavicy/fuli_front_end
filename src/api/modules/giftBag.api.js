@@ -10,7 +10,7 @@ export default ({ request }) => ({
   // 获取礼包列表
   GET_GIFTS (data) {
     return request({
-      url: 'giftBag?page=' + (data.page || '') + '&pageSize=' + (data.pageSize || '') + '&giftName=' + data.giftName + '&goodsName=' + data.goodsName + '&giftStatus=' + data.giftStatus
+      url: 'giftBag?page=' + (data.page || '') + '&pageSize=' + (data.pageSize || '') + '&giftName=' + data.giftName + '&goodsName=' + data.goodsName + '&giftStatus=' + data.giftStatus + '&staffNo=' + (data.staffNo || '')
     })
   },
   // 修改礼包状态 1：上架 2：删除 3：下架

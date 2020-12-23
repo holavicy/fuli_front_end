@@ -59,12 +59,26 @@ export default ({ request }) => ({
       data,
     })
   },
+  // 员工取消想要某商品
+  CANCEL_WANT (data) {
+    return request({
+      url: '/cancelLike',
+      method: 'POST',
+      data,
+    })
+  },
   // 删除库存明细
   DELETE_STOCK_RECORD (data) {
     return request({
       url: '/deleteStock',
       method: 'POST',
       data,
+    })
+  },
+  // 根据员工号，商品id判断该员工有没有喜欢过该商品
+  IS_LIKE (data) {
+    return request({
+      url: '/isLike?staffNo=' + data.staffNo + '&goodsId=' + data.goodsId
     })
   }
 })

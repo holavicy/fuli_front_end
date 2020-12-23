@@ -1,80 +1,82 @@
 <template>
   <d2-container>
     <template slot="header">
-        <div class="action-wrapper">
-            <div class="filter-item"><span>商品名称：</span> <el-input size="mini" placeholder="请输入内容" v-model="goodsName"></el-input></div>
-            <div class="filter-item">
-                <span>商品状态： </span>
-                <el-select size="mini" v-model="goodsStatus" placeholder="请选择">
-                    <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
-                </el-select>
-            </div>
-            <el-button size="mini" type="primary" @click="getAllGoods(1)">查询</el-button>  
-            <el-upload action="default" :before-upload="beforeUploadGoods" :http-request="importFileGoods" :show-file-list="false" style="margin: 0 10px">
-              <el-button size="mini" type="primary" plain>增量导入</el-button>
-            </el-upload>
-            <el-button size="mini" type="danger" plain @click="addGoods()">新增</el-button>
-        </div>
+      <div class="action-wrapper">
+          <div class="filter-item"><span>商品名称：</span> <el-input size="mini" placeholder="请输入内容" v-model="goodsName"></el-input></div>
+          <div class="filter-item">
+            <span>商品状态： </span>
+            <el-select size="mini" v-model="goodsStatus" placeholder="请选择">
+                <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
+            </el-select>
+          </div>
+          <el-button size="mini" type="primary" @click="getAllGoods(1)">查询</el-button>
+          <el-upload action="default" :before-upload="beforeUploadGoods" :http-request="importFileGoods" :show-file-list="false" style="margin: 0 10px">
+            <el-button size="mini" type="primary" plain>增量导入</el-button>
+          </el-upload>
+          <el-button size="mini" type="danger" plain @click="addGoods()">新增</el-button>
+      </div>
     </template>
     <el-table :data="goodsList" border style="width: 100%" size="mini">
-        <el-table-column prop="id" label="ID" width="60"></el-table-column>
-        <el-table-column label="名称" width="180">
+      <el-table-column prop="id" label="ID" width="60"></el-table-column>
+      <el-table-column label="名称" width="180">
+        <template slot-scope="scope">
+          {{scope.row.name}}<i class="cus-badge" v-if="scope.row.likeStaffNum > 0 ">被{{scope.row.likeStaffNum}}人喜欢</i>
+        </template>
+      </el-table-column>
+      <el-table-column prop="image_url" label="图片" width="140">
+        <template slot-scope="scope">
+          <el-image style="width: 60px; height: 60px" :src="'http://'+HOST_FILES+scope.row.image_url" @click="previewImage(scope.row)"></el-image>
+        </template>
+      </el-table-column>
+      <el-table-column prop="num" label="库存" width="100"></el-table-column>
+      <el-table-column prop="unit" label="单位" width="100"></el-table-column>
+      <el-table-column prop="price" label="均价/元" width="100"></el-table-column>
+      <el-table-column label="操作">
           <template slot-scope="scope">
-            {{scope.row.name}}<i class="cus-badge" v-if="scope.row.likeStaffNum > 0 && scope.row.likeNum > 0">被{{scope.row.likeStaffNum}}人喜欢{{scope.row.likeNum}}次</i>
+              <el-switch v-model="scope.row.status" active-text="已上架" inactive-text="已下架" size="mini" style="margin-right:20px" :active-value="1" :inactive-value="3" @change="onOffTrigger(scope.row)"></el-switch>
+              <el-popconfirm title="确定删除此商品？" @onConfirm="handleDelete(scope.$index, scope.row)">
+                  <el-link slot="reference" type="danger" class="margin-right-20">删除</el-link>
+              </el-popconfirm>
+              <el-link type="primary" @click="editGoods(scope.$index, scope.row)" style="margin-right:20px">编辑</el-link>
+              <el-link type="primary" @click="showStockDialog(scope.row)" >库存明细</el-link>
           </template>
-        </el-table-column>
-        <el-table-column prop="image_url" label="图片" width="180">
-          <template slot-scope="scope">
-            <el-image style="width: 60px; height: 60px" :src="scope.row.image_url"></el-image>
-          </template>
-        </el-table-column>
-        <el-table-column prop="num" label="库存" width="100"></el-table-column>
-        <el-table-column prop="unit" label="单位" width="100"></el-table-column>
-        <el-table-column prop="price" label="单价/元" width="100"></el-table-column>
-        <el-table-column label="操作">
-            <template slot-scope="scope">
-                <el-switch v-model="scope.row.status" active-text="已上架" inactive-text="已下架" size="mini" style="margin-right:20px" :active-value="1" :inactive-value="3" @change="onOffTrigger(scope.row)"></el-switch>
-                <el-popconfirm title="确定删除此商品？" @onConfirm="handleDelete(scope.$index, scope.row)">
-                    <el-link slot="reference" type="danger" class="margin-right-20">删除</el-link>
-                </el-popconfirm>
-                <el-link type="primary" @click="editGoods(scope.$index, scope.row)" style="margin-right:20px">编辑</el-link>
-                <el-link type="primary" @click="showStockDialog(scope.row)" >库存明细</el-link>
-            </template>
-        </el-table-column>
+      </el-table-column>
     </el-table>
     <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
 
     <!-- 新增、编辑弹框 -->
     <el-dialog :title="dialogTitle" :visible.sync="dialogFormVisible">
-        <el-form :model="newGoods">
-            <el-form-item label="商品名称" :label-width="formLabelWidth">
-                <el-input v-model="newGoods.name" autocomplete="off"></el-input>
-            </el-form-item>
-            <el-form-item label="图片" :label-width="formLabelWidth">
-                <el-upload list-type="picture-card"
-                    :before-upload="beforeUpload" :http-request="importFile" :show-file-list="false"
-                    action="default"
-                   >
-                    <img v-if="newGoods.imageUrl" :src="newGoods.imageUrl" class="avatar">
-                    <i v-else class="el-icon-plus avatar-uploader-icon"></i>
-                </el-upload>
-            </el-form-item>
-            <el-form-item label="单位" :label-width="formLabelWidth">
-                <el-input v-model="newGoods.unit" autocomplete="off"></el-input>
-            </el-form-item>
-            <el-form-item label="数量" :label-width="formLabelWidth" v-if="!newGoods.id">
-                <el-input-number v-model="newGoods.num" :min="1" :max="1000" label="描述文字"></el-input-number>
-            </el-form-item>
-            <el-form-item label="单价" :label-width="formLabelWidth">
-                <el-input v-model="newGoods.price">
-                    <template slot="append">元</template>
-                </el-input>
-            </el-form-item>
-        </el-form>
-        <div slot="footer" class="dialog-footer">
-            <el-button @click="dialogFormVisible = false">取 消</el-button>
-            <el-button type="primary" @click="submitNewGoods()">确 定</el-button>
-        </div>
+      <el-form :model="newGoods">
+          <el-form-item label="商品名称" :label-width="formLabelWidth">
+            <el-input v-model="newGoods.name" autocomplete="off" maxlength="20"></el-input>
+          </el-form-item>
+          <el-form-item label="图片" :label-width="formLabelWidth">
+              <el-upload
+                class="avatar-uploader"
+                action="default"
+                :show-file-list="false"
+                :before-upload="beforeUpload"
+                :http-request="importFile" >
+                  <img v-if="newGoods.image_url" :src="'http://'+HOST_FILES+newGoods.image_url" class="avatar cus-image">
+                  <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+              </el-upload>
+          </el-form-item>
+          <el-form-item label="单位" :label-width="formLabelWidth">
+              <el-input v-model="newGoods.unit" autocomplete="off"></el-input>
+          </el-form-item>
+          <el-form-item label="数量" :label-width="formLabelWidth" v-if="!newGoods.id">
+              <el-input-number v-model="newGoods.num" :min="1" :max="1000" label="描述文字"></el-input-number>
+          </el-form-item>
+          <el-form-item label="单价" :label-width="formLabelWidth">
+            <el-input v-model="newGoods.price">
+              <template slot="append">元</template>
+            </el-input>
+          </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogFormVisible = false">取 消</el-button>
+        <el-button type="primary" @click="submitNewGoods()">确 定</el-button>
+      </div>
     </el-dialog>
 
     <!-- 商品库存变化明细 -->
@@ -87,6 +89,7 @@
           </template>
         </el-table-column>
         <el-table-column property="num" label="变化数量" width="80"></el-table-column>
+        <el-table-column property="price" label="商品单价" width="80"></el-table-column>
         <el-table-column property="change_des" label="变化说明"></el-table-column>
         <el-table-column label="操作日期" width="140">
           <template slot-scope="scope">
@@ -96,13 +99,11 @@
         <el-table-column label="操作" width="120">
           <template slot-scope="scope">
             <el-button type="primary" icon="el-icon-edit" circle @click="editStock(scope.$index, scope.row)" size="mini"></el-button>
-            
             <el-tooltip class="item" effect="dark" content="点击将立即删除此条记录，请谨慎操作" placement="top-start">
               <el-button type="danger" icon="el-icon-delete" circle @click="deleteStock(scope.row)" size="mini"></el-button>
             </el-tooltip>
           </template>
         </el-table-column>
-        
       </el-table>
       <el-pagination @size-change="handleSizeChangeStock" @current-change="handleCurrentChangeStock" :current-page="paginationStock.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="paginationStock.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="paginationStock.total" style="margin-top:10px"></el-pagination>
       <el-dialog width="30%" title="修改库存" :visible.sync="innerVisible" append-to-body>
@@ -113,9 +114,15 @@
             </el-select>
         </div>
         <div class="filter-item margin-bottom-10"><span>变化数量：</span> <el-input size="mini" placeholder="请输入内容" v-model="stockChangeNum" style="width: 100px"></el-input></div>
+        <div class="filter-item margin-bottom-10" v-if="stockChangeType == 1"><span>商品单价：</span> <el-input size="mini" placeholder="请输入内容" v-model="stockChangePrice" style="width: 100px"></el-input></div>
         <div class="filter-item margin-bottom-10"><span>变化说明：</span> <el-input size="mini" placeholder="请输入内容" v-model="stockChangeDesc" style="width: 140px"></el-input></div>
         <el-button size="mini" type="primary" @click="submitStockChange()">确定</el-button>
       </el-dialog>
+    </el-dialog>
+
+    <!-- 图片预览 -->
+    <el-dialog :visible.sync="imgDialogVisible" width="30%">
+      <img width="100%" :src="dialogImageUrl" alt="">
     </el-dialog>
   </d2-container>
 </template>
@@ -168,7 +175,7 @@ export default {
         unit: '',
         num: 0,
         price: 0.00,
-        imageUrl: ''
+        image_url: ''
       },
       file: null,
       goodsFile: null,
@@ -178,8 +185,11 @@ export default {
       stockChangeType: 1,
       stockChangeNum: 1,
       stockChangeDesc: '',
+      stockChangePrice: '',
       innerVisible: false,
-      userInfo: {}
+      userInfo: {},
+      imgDialogVisible: false,
+      dialogImageUrl: ''
     }
   },
   methods: {
@@ -200,15 +210,13 @@ export default {
     },
     // 上传图片
     importFile () {
-      const _this = this
       let fileData = new FormData()
-      fileData.append('file', _this.file)
-      fileData.append('staffNo', _this.userInfo.staffNo)
+      fileData.append('file', this.file)
+      fileData.append('staffNo', this.userInfo.staffNo)
       const url = '/uploadImage'
       this.uploadFile(url, fileData).then((res) => {
         if (res.data.code === 0) {
-          _this.newGoods.imageUrl = res.data.data
-          console.log(_this.newGoods)
+          this.newGoods.image_url = res.data.data
         } else {
           console.log(res)
         }
@@ -248,6 +256,7 @@ export default {
       this.dialogFormVisible = false
       let data = this.newGoods
       data.staffNo = this.userInfo.staffNo
+      this.newGoods.imageUrl = this.newGoods.image_url
       const id = this.newGoods.id
       if (id) {
         // 编辑商品
@@ -257,7 +266,7 @@ export default {
             message: '编辑成功!'
           })
           this.getAllGoods()
-        }).catch( e => {
+        }).catch(e => {
           this.getAllGoods()
         })
       } else {
@@ -283,7 +292,7 @@ export default {
           message: '删除商品成功!'
         })
         this.getAllGoods(1)
-      }).catch(e=>{
+      }).catch(e => {
         this.getAllGoods()
       })
     },
@@ -296,22 +305,22 @@ export default {
         unit: '',
         num: 0,
         price: 0.00,
-        imageUrl: ''
+        image_url: ''
       }
     },
     // 编辑商品
     editGoods (index, row) {
+      this.newGoods = row
       this.dialogTitle = '编辑商品'
       this.dialogFormVisible = true
-      this.newGoods = row
-      this.newGoods.imageUrl = row.image_url
+      console.log(this.newGoods)
     },
     // 获取商品列表
     getAllGoods (page) {
       if (page) {
         this.pagination.currentPage = page
       }
-      let data = {
+      const data = {
         goodsName: this.goodsName,
         goodsStatus: this.goodsStatus,
         page: this.pagination.currentPage,
@@ -352,7 +361,7 @@ export default {
           message: '商品' + (goods.status === 1 ? '上架' : goods.status === 3 ? '下架' : '') + '成功!'
         })
         this.getAllGoods()
-      }).catch( e => {
+      }).catch(e => {
         this.getAllGoods()
       })
     },
@@ -396,15 +405,17 @@ export default {
         this.$message.error('请输入变化说明')
         return
       }
+      let data = {
+        changeType: this.stockChangeType,
+        num: this.stockChangeNum,
+        desc: this.stockChangeDesc,
+        price: this.stockChangePrice,
+        staffNo: this.userInfo.staffNo,
+        goodsId: this.goodsStockId
+      }
       if (this.stockRecordId) {
         console.log('编辑')
-        const data = {
-          stockId: this.stockRecordId,
-          changeType: this.stockChangeType,
-          num: this.stockChangeNum,
-          desc: this.stockChangeDesc,
-          staffNo: this.userInfo.staffNo
-        }
+        data.stockId = this.stockRecordId
 
         this.$api.UPDATE_STOCK_CHANGE_DETAIL(data).then((res) => {
           this.$message({
@@ -416,13 +427,6 @@ export default {
           this.getAllGoods()
         })
       } else {
-        const data = {
-          goodsId: this.goodsStockId,
-          changeType: this.stockChangeType,
-          num: this.stockChangeNum,
-          desc: this.stockChangeDesc,
-          staffNo: this.userInfo.staffNo
-        }
         this.$api.ADD_STOCK_CHANGE_DETAIL(data).then((res) => {
           this.$message({
             type: 'success',
@@ -433,10 +437,7 @@ export default {
           this.getAllGoods()
         })
       }
-      
-
     },
-
     // 修改库存记录
     editStock (index, row) {
       console.log(row)
@@ -444,9 +445,9 @@ export default {
       this.innerVisible = true
       this.stockChangeType = row.change_type
       this.stockChangeNum = row.num
+      this.stockChangePrice = row.price
       this.stockChangeDesc = row.change_des
     },
-
     // 删除库存记录
     deleteStock (row) {
       const data = {
@@ -459,6 +460,11 @@ export default {
         this.getStockRecordsById(this.goodsStockId)
         this.getAllGoods()
       })
+    },
+    // 预览图片
+    previewImage (row) {
+      this.imgDialogVisible = true
+      this.dialogImageUrl = 'http://' + this.HOST_FILES + row.image_url
     }
   },
 
@@ -482,7 +488,6 @@ export default {
     margin-right: 20px;
 }
 
-
 .action-wrapper .filter-item span{
     width: 60px;
     flex-shrink: 0;
@@ -504,4 +509,34 @@ export default {
   font-style: normal;
   margin-left: 6px;
 }
+
+.cus-image{
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-uploader .el-upload:hover {
+    border-color: #409EFF;
+  }
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    line-height: 178px;
+    text-align: center;
+    border: 1px dashed #d9d9d9;
+  }
+  .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+  }
 </style>

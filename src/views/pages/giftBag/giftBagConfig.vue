@@ -18,13 +18,20 @@
         <el-table-column prop="index" width="40"></el-table-column>
         <el-table-column label="礼包名称" width="180">
           <template slot-scope="scope">
-            {{scope.row.giftBagName}}<i class="cus-badge" v-if="scope.row.limitGoodsNum > 0">{{scope.row.goodsLength}}选{{scope.row.limitGoodsNum}}</i>
+            <div class="gift-name-wrapper"></div>
+            <p>{{scope.row.giftBagName}}</p>
+            <el-image style="width: 160px; height: 60px; margin: 0 auto" :src="'http://'+HOST_FILES+scope.row.image_url"></el-image>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="商品名称" width="180"></el-table-column>
+        <el-table-column label="商品名称" width="180">
+           <template slot-scope="scope">
+            {{scope.row.name}}
+            <i class="cus-badge" v-if="scope.row.is_must == 1">必选</i>
+          </template>
+        </el-table-column>
         <el-table-column prop="imageUrl" label="图片" width="180">
           <template slot-scope="scope">
-            <el-image style="width: 60px; height: 60px" :src="scope.row.imageUrl"></el-image>
+            <el-image style="width: 60px; height: 60px" :src="'http://'+HOST_FILES+scope.row.imageUrl"></el-image>
           </template>
         </el-table-column>
         <el-table-column label="库存" width="100">
@@ -49,10 +56,31 @@
     <el-dialog :title="dialogTitle" :visible.sync="dialogFormVisible" width="66%">
         <el-form :model="newGiftBag">
             <el-form-item label="礼包名称" :label-width="formLabelWidth">
-                <el-input v-model="newGiftBag.name" autocomplete="off"></el-input>
+              <el-input v-model="newGiftBag.name" autocomplete="off" maxlength="20"></el-input>
             </el-form-item>
-            <el-form-item label="数量限制" :label-width="formLabelWidth">
-                <el-input-number v-model="newGiftBag.limitGoodsNum" :min="0" :max="20" label="描述文字"></el-input-number>
+            <el-form-item label="礼包图片" :label-width="formLabelWidth">
+              <el-upload
+                class="avatar-uploader"
+                action="default"
+                :show-file-list="false"
+                :before-upload="beforeUpload"
+                :http-request="importFile" >
+                  <img v-if="newGiftBag.image_url" :src="'http://'+HOST_FILES+newGiftBag.image_url" class="avatar cus-image">
+                  <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+              </el-upload>
+            </el-form-item>
+            <el-form-item label="单品限制" :label-width="formLabelWidth">
+              <el-input-number v-model="newGiftBag.limitGoodsNum" :min="0" :max="20" label="描述文字"></el-input-number>
+            </el-form-item>
+            <el-form-item label="必选商品" :label-width="formLabelWidth">
+              <el-select v-model="mustChooseGoodsIndex" filterable clearable placeholder="请选择">
+                <el-option
+                  v-for="item in goodsOptions"
+                  :key="item.key"
+                  :label="item.label"
+                  :value="item.key">
+                </el-option>
+              </el-select>
             </el-form-item>
             <el-form-item label="选择商品" :label-width="formLabelWidth">
               <el-transfer filterable :filter-method="filterMethod" :titles="['商品列表', '已选商品']"
@@ -76,6 +104,9 @@ export default {
   name: 'giftBagConfig',
   data () {
     return {
+      file: null,
+      mustChooseGoodsIndex: '',
+      mustChooseGoods: null,
       dialogTitle: '新增礼包',
       dialogFormVisible: false,
       giftBagName: '',
@@ -105,7 +136,9 @@ export default {
         goods: []
       },
       userInfo: {},
+      formattedGoodsData: [],
       transferData: [],
+      goodsOptions: [],
       selectedGoodsList: [],
       filterMethod (query, item) {
         return item.label.indexOf(query) > -1
@@ -120,6 +153,25 @@ export default {
     async load () {
       const db = await this.database({ user: true })
       this.userInfo = db.get('user_info').value()
+    },
+    beforeUpload (file) {
+      this.file = file
+    },
+    importFile () {
+      let fileData = new FormData()
+      fileData.append('file', this.file)
+      fileData.append('staffNo', this.userInfo.staffNo)
+      const url = '/uploadImage'
+      this.uploadFile(url, fileData).then((res) => {
+        if (res.data.code === 0) {
+          this.newGiftBag.image_url = res.data.data
+          console.log(this.newGiftBag)
+        } else {
+          console.log(res)
+        }
+      }, (rej) => {
+        console.log(rej)
+      })
     },
     // 删除商品
     handleDelete (index, row) {
@@ -155,19 +207,36 @@ export default {
       this.getOnSaleGoods().then((res) => {
         this.dialogFormVisible = true
         this.newGiftBag = this.giftBagOriList[row.index - 1]
+        console.log('this.newGiftBag')
+        console.log(this.newGiftBag)
         this.selectedGoodsList = []
-        this.newGiftBag.goods.forEach(goods => {
+        let mustGoodsIndex = ''
+        console.log(this.newGiftBag.goods)
+        this.newGiftBag.goods.forEach((goods, goodsIndex) => {
+          console.log(goods)
           this.goodsData.forEach((g, i) => {
-            if (goods.id === g.id) {
+            if (goods.is_must == 1 && goods.id === g.id) {
+              console.log(i)
+              mustGoodsIndex = goodsIndex
+              this.mustChooseGoodsIndex = i
+            }
+            if (goods.id === g.id && goods.is_must == 0) {
               this.selectedGoodsList.push(i)
             }
           })
         })
+
+        if (mustGoodsIndex != '') {
+          this.newGiftBag.goods.splice(mustGoodsIndex, 1)
+        }
       })
     },
     // 提交礼包数据
     submitNewGoods () {
-      console.log(this.newGiftBag)
+      if (this.mustChooseGoods) {
+        this.mustChooseGoods['is_must'] = 1
+        this.newGiftBag.goods.unshift(this.mustChooseGoods)
+      }
       let data = this.newGiftBag
       if (!data.name) {
         this.$message.error('请输入礼包名称')
@@ -179,10 +248,21 @@ export default {
         return
       }
 
-      if (data.limitGoodsNum >= data.goods.length) {
-        this.$message.error('数量限制必须小于商品的个数')
+      if (this.mustChooseGoods && data.limitGoodsNum == 0) {
+        this.$message.error('请输入单品限制')
         return
       }
+
+      if (this.mustChooseGoods && data.limitGoodsNum >= data.goods.length - 1) {
+        this.$message.error('单品限制必须小于商品的个数')
+        return
+      }
+
+      if (!this.mustChooseGoods && data.limitGoodsNum >= data.goods.length) {
+        this.$message.error('单品限制必须小于商品的个数')
+        return
+      }
+
       this.dialogFormVisible = false
       data.staffNo = this.userInfo.staffNo
       if (this.newGiftBag.id) {
@@ -209,6 +289,7 @@ export default {
             let goodsItem = goods
             goodsItem.giftBagId = ele.id
             goodsItem.giftBagName = ele.name
+            goodsItem.image_url = ele.image_url
             goodsItem.giftBagStatus = ele.status
             goodsItem.goodsLength = ele.goods.length
             goodsItem.limitGoodsNum = ele.limitGoodsNum
@@ -262,8 +343,11 @@ export default {
     },
     // 当穿梭框变化时，重置礼包中选中的商品
     setSelectedGoods (value) {
+      console.log('transfer changed')
+      console.log(value)
       this.newGiftBag.goods = []
       value.forEach(i => {
+        this.goodsData[i]['is_must'] = 0
         this.newGiftBag.goods.push(this.goodsData[i])
       })
     },
@@ -275,9 +359,10 @@ export default {
 
       return new Promise((reslove, reject) => {
         this.$api.GET_ALL_GOODS(data).then(res => {
-          console.log(res)
           this.goodsData = res.list
-          this.transferData = this.formatTransferData(this.goodsData)
+          this.formattedGoodsData = this.formatTransferData(this.goodsData)
+          this.transferData = [...this.formattedGoodsData]
+          this.goodsOptions = [...this.formattedGoodsData]
           reslove(res)
         })
       })
@@ -329,6 +414,36 @@ export default {
       })
     }
   },
+  watch: {
+    // 当选择了必选商品后，可选商品列表自动去掉必选商品, 若选择的商品已被选到了穿梭框的右边，也要更新穿梭框右边的值
+    mustChooseGoodsIndex (val) {
+      console.log('watch')
+      console.log(val)
+      console.log(typeof(val))
+      console.log(val != '')
+      if (typeof(val) === 'number' && val >= 0) {
+        this.mustChooseGoods = this.goodsData[val]
+        let ori = [...this.formattedGoodsData]
+        ori.splice(val, 1)
+        this.transferData = ori
+        this.newGiftBag.goods = []
+        let selectedGoodsList = []
+        this.selectedGoodsList.forEach(i => {
+          if (i != val) {
+            this.goodsData[i]['is_must'] = 0
+            this.newGiftBag.goods.push(this.goodsData[i])
+            selectedGoodsList.push(i)
+          }
+          
+        })
+        this.selectedGoodsList = selectedGoodsList
+      } else {
+        this.mustChooseGoodsId = ''
+        this.mustChooseGoods = null,
+        this.transferData = [...this.formattedGoodsData]
+      }
+    }
+  },
   created () {
     this.load()
     this.getGifts()
@@ -370,4 +485,29 @@ export default {
 .no-num{
   color: #f56c6c;
 }
+
+.avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-uploader .el-upload:hover {
+    border-color: #409EFF;
+  }
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    line-height: 178px;
+    text-align: center;
+    border: 1px dashed #d9d9d9;
+  }
+  .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+  }
 </style>

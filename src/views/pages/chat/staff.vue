@@ -4,10 +4,10 @@
         <div class="action-wrapper">
             <div class="filter-item"><span>工号：</span> <el-input size="mini" placeholder="请输入内容" v-model="staffNoSearch"></el-input></div>
             <div class="filter-item"><span>姓名：</span> <el-input size="mini" placeholder="请输入内容" v-model="name"></el-input></div>
-            <div class="filter-item"><span>领取年份：</span><el-date-picker size="mini" v-model="getYear" type="year" placeholder="请选择"></el-date-picker></div>
+            <div class="filter-item"><span>领取年份：</span><el-date-picker size="mini" v-model="getYear" type="year" placeholder="请选择" :picker-options="pickerOptions"></el-date-picker></div>
             <div class="filter-item">
                 <span>领取状态： </span>
-                <el-select size="mini" v-model="getStatus" placeholder="请选择">
+                <el-select size="mini" v-model="getStatus" multiple  placeholder="请选择">
                     <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
                 </el-select>
             </div>
@@ -26,15 +26,17 @@
         <el-table-column prop="CODE" label="工号"></el-table-column>
         <el-table-column prop="BIRTHDATE" label="出生日期"></el-table-column>
         <el-table-column prop="ZZDATE" label="转正日期"></el-table-column>
-        <el-table-column label="是否领取" width="100">
+        <el-table-column label="领取状态" width="100">
           <template slot-scope="scope">
-                {{scope.row.GOTNUM>0?'是':'否'}}
+                {{scope.row.GOTNUM>0?(scope.row.ORDERSTATUS == 1 ? '待管理员确认':scope.row.ORDERSTATUS == 3 ? '待领取' : scope.row.ORDERSTATUS == 4 ? '已领取':''):'未申请'}}
             </template>
         </el-table-column>
         <el-table-column label="操作" width="180">
             <template slot-scope="scope">
-                <el-link type="primary" @click="canOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '否' && (dayjs(getYear).format('YYYY') == year || !getYear)">设置他人代领</el-link>
-                <el-link type="primary" @click="cancelOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '是' && (dayjs(getYear).format('YYYY') == year || !getYear)">取消代领</el-link>
+              <div v-if="scope.row.GOTNUM == 0 && (dayjs(getYear).format('YYYY') == year || !getYear)">
+                <el-link type="primary" @click="canOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '否'">设置他人代领</el-link>
+                <el-link type="primary" @click="cancelOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '是'">取消代领</el-link>
+              </div>
             </template>
         </el-table-column>
     </el-table>
@@ -67,15 +69,26 @@ export default {
         label: '全部',
         value: ''
       }, {
-        label: '已领取',
+        label: '未申请',
         value: 1
       }, {
-        label: '未领取',
+        label: '待管理员确认',
         value: 2
+      }, {
+        label: '待领取',
+        value: 3
+      }, {
+        label: '已领取',
+        value: 4
       }],
       formLabelWidth: '120px',
       goodsList: [],
-      userInfo: {}
+      userInfo: {},
+      pickerOptions: {
+        disabledDate(time) {
+          return time.getTime() < new Date('2020-01-01 00:00:00')
+        },
+      }
     }
   },
   computed: {
@@ -125,7 +138,7 @@ export default {
     canOthersGet (index, user) {
       console.log(user)
       console.log('start')
-      const url = 'http://127.0.0.1:8080/'
+      const url = 'http://192.168.40.229:8081/gift/'
       this.$api.JASPI_CONFIG({url: url}).then((res) => {
         console.log(res)
         dd.config({
@@ -171,16 +184,30 @@ export default {
                     userId: r.jobnumber,
                     msg: '管理员已设置您帮助他人代领生日福利礼包，快去帮忙领取吧'
                   }
+                  // 提醒设置的代领人
                   this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
                     console.log('发送成功')
+                    console.log(res)
+                  })
+                  // 提醒员工本人
+                  const staffData = {
+                    userId: user.CODE,
+                    msg: '管理员已设置' + r.name + '帮您领取生日福利'
+                  }
+                  this.$api.SEND_SUPPLY_MESSAGE(staffData).then(res => {
                     console.log(res)
                   })
                 })
               })
             },
-            onFail : (err) => {}
-        });
+            onFail : (err) => {
+              console.log('通讯录组件调用失败')
+              console.log(err)
+            }
+          });
         })
+      }).catch((e) => {
+        console.log(e)
       })
     },
     cancelOthersGet (index, user) {

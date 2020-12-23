@@ -7,43 +7,51 @@
             <el-button size="mini" type="primary" @click="getGifts(1)">查询</el-button>
         </div>
     </template>
-
-    <el-collapse accordion>
-      <el-collapse-item v-for="(giftBag, index) in giftBagOriList" :key="giftBag.id">
-        <template slot="title">
-          <div class="title-wrapper">
-            <div class="left">
-              <el-radio v-model="selectedGiftBagIndex" :label="index">
-                {{index+1}}、
-                <span style="font-weight: bold">{{giftBag.name}}</span>
-                </el-radio>
-                <span class="goods" v-for="(goods, i) in giftBag.goods" :key = "i">{{goods.name}}</span>
-            </div>
-            <div class="right">
-              <span style="display: inline-block;margin-left:20px">{{giftBag.limitGoodsNum>0?giftBag.goods.length+'选'+giftBag.limitGoodsNum:'共计'+giftBag.goods.length+'商品'}}</span>
-            </div>
+    <el-table :data="giftBagList" :span-method="objectSpanMethod" border height="390" size="mini">
+      <el-table-column label="礼包名称">
+        <template slot-scope="scope">
+          <el-radio v-model="selectedGiftBagIndex" :label="scope.row.index">
+            {{scope.row.index}}、{{scope.row.giftBagName}}
+            <el-image style="width: 160px; height: 60px; margin-top: 20px; display: block" :src="'http://'+HOST_FILES+scope.row.image_url"></el-image>
+          </el-radio>
+        </template>
+      </el-table-column>
+      <el-table-column label="商品名称">
+        <template slot-scope="scope">
+          <el-checkbox v-model="checked" :label="scope.row" v-if="scope.row.giftBagLimitNum>0 && scope.row.is_must == 0" :disabled="scope.row.num == 0 || scope.row.disabled" @change="checkedChanged"><span>{{scope.row.name}}</span><i class="cus-badge" v-if="scope.row.is_must == 1">必选</i></el-checkbox>
+          <div v-else class="goods-name-wrapper">
+            <img :src="`${$baseUrl}image/common/check-box.png`" class="check-box" v-if="scope.row.is_must == 1">
+            <span>{{scope.row.name}}</span>
+            <i class="cus-badge" v-if="scope.row.is_must == 1">必选</i>
           </div>
         </template>
-        <div class="goods-wrapper">
-          <el-card v-for="goods in giftBag.goods" :key="goods.id" :body-style="{ padding: '0px' }"  style="margin-right:10px;margin-bottom: 10px">
-          <img src="https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png" class="image">
-          <div style="padding: 14px;">
-            <el-checkbox v-model="checked" :label="goods" v-if="giftBag.limitGoodsNum>0" :disabled="goods.num == 0 || goods.disabled" @change="checkedChanged"><span>{{goods.name}}</span></el-checkbox>
-            <span v-else>{{goods.name}}</span>
-            <p class="price-wrapper">
-              <span>¥{{goods.price}}/{{goods.unit}}</span>
-                <el-tooltip class="item" effect="dark" content="该商品库存为空，若喜欢，点我通知管理员补货啦~" placement="right-start">
-                <i class="fa fa-heart want-add" aria-hidden="true" v-if="goods.num<=0" @click="want(goods.id)"></i>
-                </el-tooltip>
-            </p>
-            </div>
-          </el-card>
-        </div>
-      </el-collapse-item>
-    </el-collapse>
+      </el-table-column>
+      <el-table-column prop="imageUrl" label="图片" width="120">
+        <template slot-scope="scope">
+          <el-image style="width: 60px; height: 60px" :src="'http://'+HOST_FILES+scope.row.imageUrl" @click="previewImage(scope.row)"></el-image>
+        </template>
+      </el-table-column>
+      <el-table-column label="库存" width="140">
+        <template slot-scope="scope">
+          <div class="stock-wrapper">
+            <span :class="{'no-num':scope.row.num<=0}">{{ scope.row.num>0?scope.row.num + "（" + scope.row.unit +"）":"暂无库存" }}</span>
+            <el-tooltip class="item" effect="dark" content="该商品库存为空，若您想要，点我" placement="top">
+              <i class="fa fa-heart want-add" aria-hidden="true" v-if="scope.row.num <= 0 && scope.row.totalLikeNum == 0" @click="want(scope.row.id)"></i>
+            </el-tooltip>
+            <el-tooltip class="item" effect="dark" content="取消想要" placement="top">
+              <img :src="`${$baseUrl}image/common/cancel-like.png`" class="cancel-like" v-if="scope.row.num <= 0 && scope.row.totalLikeNum > 0" @click="cancelWant(scope.row.id)">
+            </el-tooltip>
+          </div>
+          
+        </template>
+      </el-table-column>
+    </el-table>
     <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
-
       <el-divider content-position="left" style="font-size:18px">订单详情</el-divider>
+      <div class="tip-info-wrapper">
+        <img :src="`${$baseUrl}image/common/warning.png`">
+        <span>生日福利包含一张餐券和一份生日礼包，领取生日礼包的时候，管理员会同时发放一张餐券，确认领取礼包的时候请确认餐券与礼包是否都已领取！</span>
+      </div>
       <div class="footer-wrapper">
         <div class="order-info">
           <div class="info-item"><span class="title">生日礼包领取人：</span><span>{{staffName}}</span><span v-if="canSupply" type="text" class="btn-primary" style="margin-left: 20px" @click="chooseStaff()">代他人领取</span></div>
@@ -51,20 +59,35 @@
           <div class="info-item"><span class="title">领取礼包名称：</span><span>{{selectedGiftBag.name}}</span></div>
         </div>
         <div class="button-wrapper">
-          <!-- <div class="btn left" @click="showDrawer">查看生日<br>礼包详情</div> -->
           <div class="btn right" @click="createOrder()">确定领取<br>此生日礼包</div>
         </div>
       </div>
 
       <el-dialog
-      title="提示"
-      :visible.sync="dialogVisible"
-      width="30%">
-      <span>确定申请后将无法修改生日礼包，您确定申请此礼包？</span>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="createOrderRes()">确 定</el-button>
-      </span>
+        title="提示"
+        :visible.sync="dialogVisible"
+        width="30%">
+        <span>确定申请后将无法修改生日礼包，您确定申请此礼包？</span>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="createOrderRes()">确 定</el-button>
+        </span>
+      </el-dialog>
+
+    <!-- 图片预览 -->
+    <el-dialog :visible.sync="imgDialogVisible" width="30%">
+      <img width="100%" :src="dialogImageUrl" alt="">
+    </el-dialog>
+
+    <!-- 选择代领人 -->
+    <el-dialog title="选择人员" :visible.sync="dialogFormVisible">
+      <el-radio-group v-model="supplyStaffIndex">
+        <el-radio :label="i" v-for="(item, i) in supplyStaffList" :key="i">{{item.staff_name}}</el-radio>
+      </el-radio-group>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogFormVisible = false">取 消</el-button>
+        <el-button type="primary" @click="setSupplyStaff()">确 定</el-button>
+      </div>
     </el-dialog>
   </d2-container>
 </template>
@@ -76,7 +99,10 @@ export default {
   name: 'giftBag',
   data () {
     return {
+      dialogImageUrl: '',
+      supplyStaffIndex: 0,
       dialogVisible: false,
+      dialogFormVisible: false,
       today: new Date(),
       pagination: {
         currentPage: 1,
@@ -94,7 +120,9 @@ export default {
       creator: '',
       staffName: '',
       creatorName: '',
-      canSupply: false
+      canSupply: false,
+      imgDialogVisible: false,
+      supplyStaffList: []
     }
   },
   computed: {
@@ -103,7 +131,7 @@ export default {
     },
 
     selectedGiftBag: function () {
-      return String(this.selectedGiftBagIndex) ? this.giftBagOriList[this.selectedGiftBagIndex] : {}
+      return String(this.selectedGiftBagIndex) ? this.giftBagOriList[this.selectedGiftBagIndex-1] : {}
     }
   },
   methods: {
@@ -116,6 +144,7 @@ export default {
             let goodsItem = goods
             goodsItem.giftBagId = ele.id
             goodsItem.giftBagName = ele.name
+            goodsItem.image_url = ele.image_url
             goodsItem.index = i + 1
             goodsItem.giftBagLimitNum = ele.limitGoodsNum
             if (index === 0) {
@@ -130,18 +159,18 @@ export default {
     },
     // 礼包中选择商品
     checkedChanged (value) {
+      console.log('checked')
       console.log(this.checked)
+
       const length = this.checked.length
-      console.log('length', length)
       // 选中商品默认选中该商品所属于的礼包
-      this.selectedGiftBagIndex = Number(this.checked[length-1].index) - 1
+      this.selectedGiftBagIndex = Number(this.checked[length-1].index)
       console.log(this.selectedGiftBagIndex)
       // 将this.check中不属于同一个礼包的数据移除
       if (length >= 2 && this.checked[length-1].giftBagId != this.checked[0].giftBagId) {
         this.checked = this.checked.slice(-1)
       }
       // 在根据limitNum控制当前礼包哪些商品不可选
-      console.log(this.checked)
       if (this.checked.length > 0 && this.checked.length >= this.checked[0].giftBagLimitNum) {
         let index = this.checked[0].index - 1
         this.giftBagOriList[index].goods.forEach(oriGoods => {
@@ -171,6 +200,8 @@ export default {
       }
       // 判断几选几的礼包是否选满
       if (this.selectedGiftBag.limitGoodsNum > 0) {
+        console.log(this.checked.length)
+        console.log(this.selectedGiftBag.limitGoodsNum)
         if (this.checked.length < this.selectedGiftBag.limitGoodsNum) {
           this.$message.error('礼包需选满' + this.selectedGiftBag.limitGoodsNum + '个商品，您还差' + (this.selectedGiftBag.limitGoodsNum - this.checked.length) + '个商品，请选择')
           return
@@ -196,11 +227,21 @@ export default {
       this.dialogVisible = false
       // 判断是否领取了礼包
       let data = this.selectedGiftBag
-
+      const goodsList = [...data.goods]
+      let mustChooseGoods = null
+      goodsList.forEach(goods => {
+        if (goods.is_must == 1) {
+          mustChooseGoods = goods
+          return
+        }
+      })
       if (this.selectedGiftBag.limitGoodsNum > 0) {
         data.goods = this.checked
       }
-
+      // 判断所选礼包是否包含必选商品，若包含，则将必选商品头部插入data.goods中
+      if (mustChooseGoods) {
+        data.goods.unshift(mustChooseGoods)
+      }
       // 领取礼包的人
       data.staffNo = this.staffNo
       data.staffName = this.staffName
@@ -212,6 +253,11 @@ export default {
       this.$api.CREATE_ORDER(data).then( res => {
         this.$message.success('生日礼包申领成功，等待管理员确认中')
         this.$router.push('/orderList')
+        if (this.staffNo == this.creator) {
+          this.$router.push('/orderList')
+        } else {
+          this.$router.push('/othersOrderList')
+        }
       })
     },
     // 获取所有上架礼包
@@ -225,62 +271,29 @@ export default {
         pageSize: this.pagination.pageSize,
         giftName: this.giftBagName,
         goodsName: this.goodsName,
-        giftStatus: 1
+        giftStatus: 1,
+        staffNo: this.creator
       }
 
       this.$api.GET_GIFTS(data).then(res => {
-        console.log(res)
         this.pagination.total = res.count
         this.giftBagOriList = [...res.list]
         this.giftBagList = this.formatGiftBagData(this.giftBagOriList)
+        console.log(this.giftBagList)
       })
     },
 
     // 选择申请人
     chooseStaff () {
-      console.log('start')
-      const url = 'http://127.0.0.1:8080/'
-      this.$api.JASPI_CONFIG({url: url}).then((res) => {
-        console.log(res)
-        dd.config({
-          agentId: res.agentId,
-          corpId: res.corpId, //必填，企业ID
-          timeStamp: res.timeStamp, // 必填，生成签名的时间戳
-          nonceStr: res.nonceStr, // 必填，生成签名的随机串
-          signature: res.signature, // 必填，签名
-          jsApiList: ['biz.contact.complexPicker'] // 必填，需要使用的jsapi列表，注意：不要带dd。
-        })
-        dd.ready(() => {
-          dd.biz.contact.complexPicker({
-            "title": "选择申请人",
-            "corpId": "dingcd0f5a2514db343b35c2f4657eb6378f",
-            "multiple": false,
-            "limitTips": "超出了",
-            "maxUsers": 1,
-            "pickedUsers": [],
-            "pickedDepartments": [],
-            "disabledUsers": [],
-            "disabledDepartments": [],
-            "requiredUsers": [],
-            "requiredDepartments": [],
-            "appId": 927117753,
-            "permissionType": "GLOBAL",
-            "responseUserOnly": false,
-            "startWithDepartmentId": 0,
-            onSuccess: (result) => {
-              this.$api.GET_INFO_BY_USER_ID({userId: result.users[0].emplId}).then(r => {
-                if (r.errcode == 0) {
-                  this.staffNo = r.jobnumber
-                  this.staffName = r.name
-                } else {
-                  this.$message.error(r.errmsg)
-                }
-              })
-            },
-            onFail : (err) => {}
-        });
-        })
-      })
+      // 选人弹框出现
+      this.dialogFormVisible = true
+    },
+
+    // 设置申请人
+    setSupplyStaff () {
+      this.dialogFormVisible = false
+      this.staffNo = this.supplyStaffList[this.supplyStaffIndex].staff_no
+      this.staffName = this.supplyStaffList[this.supplyStaffIndex].staff_name
     },
     ...mapActions('d2admin/db', [
       'database',
@@ -289,11 +302,11 @@ export default {
     async load () {
       const db = await this.database({ user: true })
       const userInfo = db.get('user_info').value()
-      console.log(userInfo)
       this.staffNo = userInfo.staffNo
       this.creator = userInfo.staffNo
       this.staffName = userInfo.name
       this.creatorName = userInfo.name
+      this.getGifts()
       this.getSupplyList()
     },
     handleSizeChange (val) {
@@ -305,7 +318,6 @@ export default {
       this.getGifts()
     },
     want (id) {
-      console.log(id)
       const data = {
         goodsId: id,
         staffNo: this.creator,
@@ -313,6 +325,18 @@ export default {
       }
       this.$api.LIKE(data).then((res) => {
         this.$message.success('操作成功')
+        this.getGifts()
+      })
+    },
+
+    cancelWant (goodsId) {
+      const data = {
+        goodsId: goodsId,
+        staffNo: this.creator
+      }
+      this.$api.CANCEL_WANT(data).then(res => {
+        this.$message.success('取消成功')
+        this.getGifts()
       })
     },
     getSupplyList () {
@@ -323,13 +347,41 @@ export default {
         supplyStaffNo: this.creator
       }
       this.$api.GET_SUPPLY(data).then(res => {
-        this.canSupply = res && res.count > 0
+        let supplyStaffList = []
+        res.list.forEach((record, index) => {
+          if (record.supply_order_list.length == 0) {
+            supplyStaffList.push(record)
+          }
+        })
+        this.canSupply = supplyStaffList && supplyStaffList.length > 0
+        this.supplyStaffList = supplyStaffList
       })
+    },
+
+    objectSpanMethod ({row, column, rowIndex, columnIndex}) {
+      if (columnIndex === 0) {
+        if (row.rowspan) {
+          return {
+            rowspan: row.rowNum,
+            colspan: 1
+          }
+        } else {
+          return {
+            rowspan: 0,
+            colspan: 0
+          }
+        }
+      }
+    },
+
+    // 预览图片
+    previewImage (row) {
+      this.imgDialogVisible = true
+      this.dialogImageUrl = 'http://' + this.HOST_FILES + row.imageUrl
     }
   },
   created () {
     this.load()
-    this.getGifts()
   }
 }
 </script>
@@ -410,6 +462,16 @@ export default {
   flex-wrap: wrap;
 }
 
+.goods-wrapper .image{
+  width: 100%;
+  height: 300px;
+  display: block;
+}
+
+.goods-wrapper .goods-name{
+  height: 42px;
+}
+
 .title-wrapper{
   width: 20px;
   flex-grow: 1;
@@ -433,10 +495,11 @@ export default {
   align-items: center;
 }
 
-.price-wrapper .want-add{
+.want-add{
   color: #F56C6C;
+  margin-left: 20px;
 }
-.price-wrapper .want-add:hover{
+.want-add:hover{
   cursor: pointer;
   color: red;
 }
@@ -451,5 +514,57 @@ export default {
 .btn-primary:hover{
   cursor: pointer;
   background:#017EFF;
+}
+.no-num{
+  color: #f56c6c;
+  font-weight: bold;
+}
+.cus-badge{
+  font-size: 10px;
+  line-height: 12px;
+  background: red;
+  color: #ffffff;
+  border-radius: 5px;
+  padding: 0 4px;
+  font-style: normal;
+  margin-left: 6px;
+}
+.goods-name-wrapper{
+  display: flex;
+  align-items: center;
+}
+
+.goods-name-wrapper .check-box{
+  width: 14px;
+  height: 14px;
+  display: block;
+  margin-right: 10px;
+}
+
+.tip-info-wrapper{
+  font-size: 14px;
+  background:rgb(236, 245, 255);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.tip-info-wrapper img{
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+}
+.stock-wrapper{
+  display: flex;
+  align-items: center;
+}
+.cancel-like{
+  width: 12px;
+  height: 12px;
+  display: block;
+  margin-left: 20px;
+}
+.cancel-like:hover{
+  cursor: pointer;
 }
 </style>

@@ -21,7 +21,7 @@
           <div class="title-wrapper">
             <div class="left">
                 {{index+1}}、
-                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}</span>
+                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}（另含一张餐券）</span>
                 <span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</span>
             </div>
             <div class="staff-name">{{order.staffName}}</div>
@@ -32,13 +32,10 @@
           </div>
         </template>
         <div class="goods-wrapper">
-          <el-card v-for="goods in order.goods" :key="goods.id" :body-style="{ padding: '0px' }"  style="margin-right:10px;margin-bottom: 10px">
-          <img src="https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png" class="image">
+          <el-card v-for="goods in order.goods" :key="goods.id" :body-style="{ padding: '0px' }"  style="margin-right:10px;margin-bottom: 10px; width:235px">
+          <img :src="'http://'+HOST_FILES+goods.imageUrl" class="image">
           <div style="padding: 14px;">
             <span>{{goods.name}}</span>
-            <p class="price-wrapper">
-              <span>¥{{goods.price}}/{{goods.unit}}</span>
-            </p>
             </div>
           </el-card>
         </div>
@@ -190,25 +187,39 @@ export default {
   flex-wrap: wrap;
 }
 
+.goods-wrapper .image{
+  width: 100%;
+  height: 300px;
+  display: block;
+}
+
 .title-wrapper{
   width: 20px;
   flex-grow: 1;
   display: flex;
   height: 100%;
-  justify-content: space-between;
 }
 .title-wrapper .left{
   width: 600px;
   flex-grow: 0;
   flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-right: 20px;
 }
 .title-wrapper .staff-name{
   width: 100px;
   flex-grow: 0;
   flex-shrink: 0;
 }
+.title-wrapper .status{
+  width: 100px;
+  flex-grow: 0;
+  flex-shrink: 0;
+}
 .title-wrapper .right{
-  width: 200px;
+  width: 100px;
   flex-grow: 0;
   flex-shrink: 0;
   margin-right: 10px;

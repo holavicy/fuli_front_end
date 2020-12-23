@@ -6,7 +6,7 @@
             <div class="filter-item"><span>姓名：</span> <el-input size="mini" placeholder="请输入内容" v-model="staffName"></el-input></div>
 
             <div class="filter-item"><span>领取年份：</span><el-date-picker size="mini" v-model="year" type="year" placeholder="请选择"></el-date-picker></div>
-            <div class="filter-item"><span>领取状态：</span><el-select size="mini" v-model="orderStatus" placeholder="请选择">
+            <div class="filter-item"><span>领取状态：</span><el-select size="mini" multiple v-model="orderStatus" placeholder="请选择">
                 <el-option
                   v-for="item in orderStatusOptions"
                   :key="item.value"
@@ -25,12 +25,12 @@
           <div class="title-wrapper">
             <div class="left">
                 {{index+1}}、
-                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}</span>
-                <span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</i></span>
+                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}（另含一张餐券）</span>
+                <span class="goods-items"><span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</span></span>
                 <span class="cus-badge" v-if="order.creatorNo != order.staffNo && order.creatorName">由{{order.creatorName.trim()}}代领</span>
             </div>
-            <div class="staff-no">{{order.staffNo}}</div>
-            <div class="staff-name">{{order.staffName}}</div>
+            <!-- <div class="staff-no">{{order.staffNo}}</div> -->
+            <div class="staff-name">{{order.staffName}}（{{order.staffNo}}）</div>
             <div class="status">{{orderStatusDict[order.status]}}</div>
             <div class="right">
               <span style="display: inline-block;margin-left:20px" v-if="order.status == 1" @click.stop="confirmOrder(order)">确认</span>
@@ -40,22 +40,16 @@
           </div>
         </template>
         <div class="goods-wrapper">
-          <el-card v-for="goods in order.goods" :key="goods.id" :body-style="{ padding: '0px' }"  style="margin-right:10px;margin-bottom: 10px">
-          <img src="https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png" class="image">
+          <el-card v-for="goods in order.goods" :key="goods.id" :body-style="{ padding: '0px' }"  style="margin-right:10px;margin-bottom: 10px;width: 235px">
+          <img :src="'http://'+HOST_FILES+goods.imageUrl" class="image">
           <div style="padding: 14px;">
             <span>{{goods.name}}</span>
-            <p class="price-wrapper">
-              <span>¥{{goods.price}}/{{goods.unit}}</span>
-            </p>
             </div>
           </el-card>
         </div>
       </el-collapse-item>
     </el-collapse>
-
     <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
-
-
   </d2-container>
 </template>
 
@@ -107,7 +101,7 @@ export default {
             this.getOrderList()
             // 发送消息提醒员工可领取
             const userData = {
-              userId: '100297'
+              userId: order.staffNo
             }
             this.$api.SEND_MESSAGE(userData).then(res => {
               console.log('发送成功')
@@ -126,7 +120,6 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          console.log(this.userInfo)
           const data = {
             orderId: order.id,
             status: 2,
@@ -237,34 +230,49 @@ export default {
   flex-wrap: wrap;
 }
 
+.goods-wrapper .image{
+  width: 100%;
+  height: 300px;
+  display: block;
+}
+
 .title-wrapper{
   width: 20px;
   flex-grow: 1;
   display: flex;
   height: 100%;
-  justify-content: space-between;
 }
 .title-wrapper .left{
-  width: 500px;
+  width: 600px;
   flex-grow: 0;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-right: 10px;
 }
-.title-wrapper .staff-no{
-  width: 100px;
-  flex-grow: 0;
-  flex-shrink: 0;
+
+.title-wrapper .left .goods-items{
+  width: 280px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .title-wrapper .staff-name{
-  width: 100px;
+  width: 160px;
   flex-grow: 0;
   flex-shrink: 0;
 }
 .title-wrapper .right{
   width: 100px;
-  flex-grow: 0;
+  flex-grow: 1;
   flex-shrink: 0;
   margin-right: 10px;
-  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+
 }
 
 .title-wrapper .left span.goods{
@@ -289,6 +297,7 @@ export default {
 .cus-badge{
   font-size: 10px;
   line-height: 12px;
+  height: 14px;
   background: red;
   color: #ffffff;
   border-radius: 5px;

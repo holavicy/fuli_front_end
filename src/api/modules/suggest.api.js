@@ -13,5 +13,12 @@ export default ({ request }) => ({
       method: 'POST',
       data
     })
+  },
+
+  // 根据员工号获取当年的意见记录
+  GET_SUGGEST_RECORDS (data) {
+    return request({
+      url: '/suggestRecords?staffNo=' + (data.staffNo || '')
+    })
   }
 })
