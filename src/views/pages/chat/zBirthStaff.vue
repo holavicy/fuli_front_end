@@ -34,27 +34,9 @@
             {{scope.row.dept_list[2]}}
           </template>
         </el-table-column>  
-        <el-table-column label="姓名" width="180">
-          <template slot-scope="scope">
-            {{scope.row.NAME}}
-            <i class="cus-badge" v-if="scope.row.isOthers == '是'">由{{scope.row.othersName}}代领</i>
-          </template>
-        </el-table-column>
+        <el-table-column prop="NAME" label="姓名" width="180"></el-table-column>
         <el-table-column prop="BIRTHDATE" label="出生日期" width="120"></el-table-column>
         <el-table-column prop="mobile" label="联系方式" width="120"></el-table-column>
-        <el-table-column label="领取状态" width="100">
-          <template slot-scope="scope">
-                {{scope.row.GOTNUM>0?(scope.row.ORDERSTATUS == 1 ? '待管理员确认':scope.row.ORDERSTATUS == 3 ? '待领取' : scope.row.ORDERSTATUS == 4 ? '已领取':''):'未申请'}}
-            </template>
-        </el-table-column>
-        <el-table-column label="操作" width="180">
-            <template slot-scope="scope">
-              <div v-if="scope.row.GOTNUM == 0 && (dayjs(getYear).format('YYYY') == year || !getYear)">
-                <el-link type="primary" @click="canOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '否'">设置他人代领</el-link>
-                <el-link type="primary" @click="cancelOthersGet(scope.$index, scope.row)" v-if="scope.row.isOthers == '是'">取消代领</el-link>
-              </div>
-            </template>
-        </el-table-column>
     </el-table>
     <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
 
@@ -137,7 +119,7 @@ export default {
         pageSize: this.pagination.pageSize,
         getYear: this.getYear ? dayjs(this.getYear).endOf('year').format('YYYY-M-D') : dayjs(this.today).endOf('year').format('YYYY-M-D')
       }
-      this.$api.GET_USER_LIST(data).then((res) => {
+      this.$api.Z_BIRTH_STAFF(data).then((res) => {
         this.loading = false
         this.goodsList = res.list
         this.pagination.total = res.count
@@ -150,100 +132,6 @@ export default {
     handleCurrentChange (val) {
       this.pagination.currentPage = val
       this.getAllUsers()
-    },
-    canOthersGet (index, user) {
-      console.log(user)
-      console.log('start')
-      const url = 'http://192.168.40.229:8081/gift/'
-      this.$api.JASPI_CONFIG({url: url}).then((res) => {
-        console.log(res)
-        dd.config({
-          agentId: res.agentId,
-          corpId: res.corpId, //必填，企业ID
-          timeStamp: res.timeStamp, // 必填，生成签名的时间戳
-          nonceStr: res.nonceStr, // 必填，生成签名的随机串
-          signature: res.signature, // 必填，签名
-          jsApiList: ['biz.contact.complexPicker'] // 必填，需要使用的jsapi列表，注意：不要带dd。
-        })
-        dd.ready(() => {
-          dd.biz.contact.complexPicker({
-            "title": "选择申请人",
-            "corpId": "dingcd0f5a2514db343b35c2f4657eb6378f",
-            "multiple": false,
-            "limitTips": "超出了",
-            "maxUsers": 1,
-            "pickedUsers": [],
-            "pickedDepartments": [],
-            "disabledUsers": [],
-            "disabledDepartments": [],
-            "requiredUsers": [],
-            "requiredDepartments": [],
-            "appId": 927117753,
-            "permissionType": "GLOBAL",
-            "responseUserOnly": false,
-            "startWithDepartmentId": 0,
-            onSuccess: (result) => {
-              this.$api.GET_INFO_BY_USER_ID({userId: result.users[0].emplId}).then(r => {
-                console.log(r)
-                let data = {
-                  othersName: r.name,
-                  othersStaffNo: r.jobnumber,
-                  staffNo: user.CODE,
-                  staffName: user.NAME,
-                  year: this.year,
-                  creator: this.userInfo.staffNo
-                }
-                this.$api.CREATE_SUPPLY(data).then(res => {
-                  this.$message.success('设置成功')
-                  this.getAllUsers()
-                  const userData = {
-                    userId: r.jobnumber,
-                    msg: '管理员已设置您帮助他人代领生日福利礼包，快去帮忙领取吧'
-                  }
-                  // 提醒设置的代领人
-                  this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
-                    console.log('发送成功')
-                    console.log(res)
-                  })
-                  // 提醒员工本人
-                  // const staffData = {
-                  //   userId: user.CODE,
-                  //   msg: '管理员已设置' + r.name + '帮您领取生日福利'
-                  // }
-                  // this.$api.SEND_SUPPLY_MESSAGE(staffData).then(res => {
-                  //   console.log(res)
-                  // })
-                })
-              })
-            },
-            onFail : (err) => {
-              console.log('通讯录组件调用失败')
-              console.log(err)
-            }
-          });
-        })
-      }).catch((e) => {
-        console.log(e)
-      })
-    },
-    cancelOthersGet (index, user) {
-      console.log(user.CODE)
-      const data = {
-        staffNo: user.CODE,
-        year: this.year
-      }
-      this.$api.CANCEL_SUPPLY(data).then((res) => {
-        this.$message.success('取消代领成功')
-        this.getAllUsers()
-        const userData = {
-          userId: user.othersStaffNo,
-          msg: '管理员已取消您帮助他人代领生日礼包，点击查看详情'
-        }
-        this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
-          console.log('发送成功')
-          console.log(res)
-        })
-      })
     }
   },
 

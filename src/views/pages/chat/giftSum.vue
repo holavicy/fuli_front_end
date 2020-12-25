@@ -2,7 +2,7 @@
   <d2-container>
     <template slot="header">
         <div class="action-wrapper">
-            <div class="filter-item"><span>礼包名称：</span> <el-input size="mini" placeholder="请输入内容" v-model="giftName"></el-input></div>
+            <!-- <div class="filter-item"><span>礼包名称：</span> <el-input size="mini" placeholder="请输入内容" v-model="giftName"></el-input></div>
             <div class="filter-item"><span>年份：</span>
             <el-date-picker size="mini"
               v-model="year"
@@ -11,44 +11,22 @@
               format="yyyy"
               value-format="yyyy">
             </el-date-picker>
-            </div>
+            </div> -->
           <el-button size="mini" type="primary" @click="getReport(1)">刷新</el-button>
           <el-button size="mini" type="primary" plain>导出</el-button>
         </div>
     </template>
     <el-table :data="list" border style="width: 100%" size="mini" v-loading="loading" :span-method="objectSpanMethod">
-        <el-table-column prop="index" label="序号" width="60"></el-table-column>
+        <el-table-column prop="index" label="序号" width="40"></el-table-column>
         <el-table-column prop="gift_name" label="礼包方案内容" width="120"></el-table-column>
-        <el-table-column prop="goods_name" label="商品名称" width="100"></el-table-column>
-        <el-table-column prop="goods_num" label="商品数量" width="80"></el-table-column>
-        <el-table-column prop="goods_price" label="商品当前出库单价" width="120"></el-table-column>
-        <el-table-column prop="total_amount" label="商品当前出库总价" width="120"></el-table-column>
-        <el-table-column prop="staff_name" label="领取人" width="60"></el-table-column>
-        <el-table-column prop="staff_no" label="领取人工号" width="90"></el-table-column>
-        <el-table-column prop="org_name" label="领取人公司" width="90"></el-table-column>
-        <el-table-column label="领取人一级部门" width="120">
-           <template slot-scope="scope">
-            {{scope.row.dept_list[0]}}
-          </template>
-        </el-table-column>
-        <el-table-column label="领取人二级部门" width="120">
-          <template slot-scope="scope">
-            {{scope.row.dept_list[1]}}
-          </template>
-        </el-table-column>
-        <el-table-column label="领取人三级部门" width="120">
-          <template slot-scope="scope">
-            {{scope.row.dept_list[2]}}
-          </template>
-        </el-table-column>
-        <el-table-column prop="birth_date" label="领取人生日" width="100"></el-table-column>
-        <el-table-column prop="change_des" label="领取日期" width="100">
-           <template slot-scope="scope">
-            {{dayjs(scope.row.finish_time).subtract(8, 'hour').format('YYYY-M-D')}}
-          </template>
-        </el-table-column>
+        <el-table-column prop="gift_num" label="总共领取" width="80"></el-table-column>
+        <el-table-column prop="goods_name" label="商品名称" width="80"></el-table-column>
+        <el-table-column prop="goods_num" label="数量" width="60"></el-table-column>
+        <el-table-column prop="goods_avg_price" label="出库均价" width="80"></el-table-column>
+        <el-table-column prop="goods_total_amount" label="出库总价" width="60"></el-table-column>
+        <el-table-column prop="all_amount" label="礼包商品出库总价合计" width="90"></el-table-column>
     </el-table>
-    <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
+    <!-- <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination> -->
 
   </d2-container>
 </template>
@@ -57,7 +35,7 @@
 import dayjs from 'dayjs'
 import { mapActions } from 'vuex'
 export default {
-  name: 'gift',
+  name: 'giftSum',
   data () {
     return {
       dayjs,
@@ -87,22 +65,18 @@ export default {
     },
 
     // 获取商品列表
-    getReport (page) {
+    getReport () {
       this.loading = true
-      if (page) {
-        this.pagination.currentPage = page
-      }
       const data = {
-        page: this.pagination.currentPage,
-        pageSize: this.pagination.pageSize,
-        giftName: this.giftName,
-        year: this.year
+        // page: this.pagination.currentPage,
+        // pageSize: this.pagination.pageSize,
+        // giftName: this.giftName,
+        // year: this.year
       }
       console.log(data)
-      this.$api.GIFT_RECORD(data).then((res) => {
+      this.$api.GIFT_SUM_REPORT(data).then((res) => {
         this.loading = false
         this.list = this.formatList(res.list)
-        this.pagination.total = res.count
       })
     },
 
@@ -112,15 +86,11 @@ export default {
           if (ele.goods_list.length > 0) {
             ele.goods_list.forEach((goods, index) => {
               let goodsItem = goods
-              goodsItem.order_id = ele.order_id
-              goodsItem.birth_date = ele.birth_date
-              goodsItem.finish_time = ele.finish_time
-              goodsItem.index = i + 1
+              goodsItem.gift_id = ele.gift_id
               goodsItem.gift_name = ele.gift_name
-              goodsItem.org_name = ele.org_name
-              goodsItem.staff_name = ele.staff_name
-              goodsItem.staff_no = ele.staff_no
-              goodsItem.dept_list = ele.dept_list
+              goodsItem.gift_num = ele.gift_num
+              goodsItem.index = i + 1
+              goodsItem.all_amount = ele.all_amount
               if (index === 0) {
                 goodsItem.rowspan = true
                 goodsItem.rowNum = ele.goods_list.length
@@ -142,7 +112,7 @@ export default {
     },
 
     objectSpanMethod ({row, column, rowIndex, columnIndex}) {
-      if (columnIndex <=1 || columnIndex >= 6) {
+      if (columnIndex <=2 || columnIndex >= 7) {
         if (row.rowspan) {
           return {
             rowspan: row.rowNum,

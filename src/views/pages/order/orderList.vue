@@ -166,7 +166,7 @@ export default {
   justify-content: space-between;
 }
 .title-wrapper .left{
-  width: 600px;
+  width: 700px;
   flex-grow: 0;
   flex-shrink: 0;
   display: flex;

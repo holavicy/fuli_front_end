@@ -32,14 +32,20 @@ const menu = [
     children: [
       { path: '/orderList', title: '我的订单' },
       { path: '/othersOrderList', title: '代领订单' },
-      { path: '/orderConfig', title: '订单列表', roles: ['admin'] }
+      { path: '/orderConfig', title: '订单维护', roles: ['admin'] }
     ]
   },
   {
     title: '统计中心',
     icon: 'th-list',
     children: [
-      { path: '/staffSummary', title: '员工领取情况', roles: ['admin'] }
+      { path: '/goodsStockReport', title: '商品库存报表', roles: ['admin'] },
+      { path: '/goodsStockInDetailReport', title: '商品入库明细报表', roles: ['admin'] },
+      { path: '/goodsStockOutDetailReport', title: '商品出库明细报表', roles: ['admin'] },
+      { path: '/giftRecord', title: '礼包领取明细报表', roles: ['admin'] },
+      { path: '/giftSum', title: '礼包领取汇总报表', roles: ['admin'] },
+      { path: '/staffSummary', title: '一般生日礼包人员统计报表', roles: ['admin'] },
+      { path: '/zBirthStaffSummary', title: '整生日人员统计报表', roles: ['admin'] }
     ],
     roles: ['admin']
   }

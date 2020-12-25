@@ -234,7 +234,7 @@ export default {
       this.uploadFile(url, fileData).then((res) => {
         if (res.data.code === 0) {
           _this.$message.success('导入成功')
-          this.getAllGoods(0)
+          this.getAllGoods(1)
         } else {
           console.log(res)
           _this.$message.error(res.data.errorMsg)

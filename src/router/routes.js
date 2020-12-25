@@ -80,15 +80,75 @@ const frameIn = [
         },
         component: _import('pages/order/orderConfig')
       },
-      // 员工领取情况统计
+      // 商品库存报表
+      {
+        path: 'goodsStockReport',
+        name: 'goodsStockReport',
+        meta: {
+          title: '商品库存报表',
+          auth: true
+        },
+        component: _import('pages/chat/goods')
+      },
+      // 商品入库明细报表
+      {
+        path: 'goodsStockInDetailReport',
+        name: 'goodsStockInDetailReport',
+        meta: {
+          title: '商品入库明细报表',
+          auth: true
+        },
+        component: _import('pages/chat/goodsStockIn')
+      },
+      // 商品出库明细报表
+      {
+        path: 'goodsStockOutDetailReport',
+        name: 'goodsStockOutDetailReport',
+        meta: {
+          title: '商品出库明细报表',
+          auth: true
+        },
+        component: _import('pages/chat/goodsStockOut')
+      },
+      // 礼包领取明细报表
+      {
+        path: 'giftRecord',
+        name: 'giftRecord',
+        meta: {
+          title: '礼包领取明细报表',
+          auth: true
+        },
+        component: _import('pages/chat/gift')
+      },
+       // 礼包领取汇总报表
+       {
+        path: 'giftSum',
+        name: 'giftSum',
+        meta: {
+          title: '礼包领取汇总报表',
+          auth: true
+        },
+        component: _import('pages/chat/giftSum')
+      },
+      // 一般生日礼包人员统计报表
       {
         path: 'staffSummary',
         name: 'staffSummary',
         meta: {
-          title: '员工领取情况',
+          title: '一般生日礼包人员统计报表',
           auth: true
         },
         component: _import('pages/chat/staff')
+      },
+      // 整生日人员统计报表
+      {
+        path: 'zBirthStaffSummary',
+        name: 'zBirthStaffSummary',
+        meta: {
+          title: '整生日人员统计报表',
+          auth: true
+        },
+        component: _import('pages/chat/zBirthStaff')
       },
       // 系统 前端日志
       {
