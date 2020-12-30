@@ -14,6 +14,7 @@
             <el-button size="mini" type="primary" plain>增量导入</el-button>
           </el-upload>
           <el-button size="mini" type="danger" plain @click="addGoods()">新增</el-button>
+          <el-button size="mini" type="primary" plain @click="exportFile()">导出</el-button>
       </div>
     </template>
     <el-table :data="goodsList" border style="width: 100%" size="mini">
@@ -329,6 +330,20 @@ export default {
       this.$api.GET_ALL_GOODS(data).then((res) => {
         this.goodsList = res.list
         this.pagination.total = res.count
+      })
+    },
+    exportFile () {
+      const data = {
+        goodsName: this.goodsName,
+        goodsStatus: this.goodsStatus
+      }
+      
+      this.$api.EXPORT_ALL_GOODS(data).then((res) => {
+        const href = 'http://' + this.HOST_FILES + res.url
+        window.location.href = href
+        this.$message.success('导出成功')
+      }).catch(e => {
+        this.$message.error('导出失败')
       })
     },
     handleSizeChange (val) {

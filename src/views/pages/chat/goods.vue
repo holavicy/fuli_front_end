@@ -3,7 +3,7 @@
     <template slot="header">
         <div class="action-wrapper">
           <el-button size="mini" type="primary" @click="getReport()">刷新</el-button>
-          <el-button size="mini" type="primary" plain>导出</el-button>
+          <el-button size="mini" type="primary" plain @click="exportFile()">导出</el-button>
         </div>
     </template>
     <el-table :data="goodsList" border style="width: 100%" size="mini" v-loading="loading">
@@ -49,7 +49,17 @@ export default {
         this.loading = false
         this.goodsList = res.list
       })
-    }
+    },
+
+    exportFile () {
+      this.$api.EXPORT_CHART_GOODS({}).then((res) => {
+        const href = 'http://' + this.HOST_FILES + res.url
+        window.location.href = href
+        this.$message.success('导出成功')
+      }).catch(e => {
+        this.$message.error('导出失败')
+      })
+    },
   },
 
   created () {

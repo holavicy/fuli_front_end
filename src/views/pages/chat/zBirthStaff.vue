@@ -4,15 +4,9 @@
         <div class="action-wrapper">
             <div class="filter-item"><span>工号：</span> <el-input size="mini" placeholder="请输入内容" v-model="staffNoSearch"></el-input></div>
             <div class="filter-item"><span>姓名：</span> <el-input size="mini" placeholder="请输入内容" v-model="name"></el-input></div>
-            <div class="filter-item"><span>领取年份：</span><el-date-picker size="mini" v-model="getYear" type="year" placeholder="请选择" :picker-options="pickerOptions"></el-date-picker></div>
-            <div class="filter-item">
-                <span>领取状态： </span>
-                <el-select size="mini" v-model="getStatus" multiple  placeholder="请选择">
-                    <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
-                </el-select>
-            </div>
+            <div class="filter-item"><span>年份：</span><el-date-picker size="mini" v-model="getYear" type="year" placeholder="请选择" :picker-options="pickerOptions"></el-date-picker></div>
             <el-button size="mini" type="primary" @click="getAllUsers()">查询</el-button>
-            <!-- <el-button size="mini" type="primary" plain>导出</el-button> -->
+            <el-button size="mini" type="primary" plain @click="exportFile()">导出</el-button>
         </div>
     </template>
     <el-table :data="goodsList" border style="width: 100%" size="mini" v-loading="loading">
@@ -105,7 +99,7 @@ export default {
       console.log(this.userInfo)
     },
 
-    // 获取商品列表
+    // 获取列表
     getAllUsers (page) {
       this.loading = true
       if (page) {
@@ -123,6 +117,25 @@ export default {
         this.loading = false
         this.goodsList = res.list
         this.pagination.total = res.count
+      })
+    },
+    exportFile () {
+      this.loading = true
+       const data = {
+        staffNo: this.staffNoSearch,
+        name: this.name,
+        getStatus: this.getStatus,
+        getYear: this.getYear ? dayjs(this.getYear).endOf('year').format('YYYY-M-D') : dayjs(this.today).endOf('year').format('YYYY-M-D')
+      }
+      
+      this.$api.EXPORT_Z_STAFF(data).then((res) => {
+        this.loading = false
+        const href = 'http://' + this.HOST_FILES + res.url
+        window.location.href = href
+        this.$message.success('导出成功')
+      }).catch(e => {
+        this.loading = false
+        this.$message.error('导出失败')
       })
     },
     handleSizeChange (val) {

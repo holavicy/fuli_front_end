@@ -12,7 +12,7 @@
         <template slot-scope="scope">
           <el-radio v-model="selectedGiftBagIndex" :label="scope.row.index">
             {{scope.row.index}}、{{scope.row.giftBagName}}
-            <el-image style="width: 160px; height: 60px; margin-top: 20px; display: block" :src="'http://'+HOST_FILES+scope.row.image_url"></el-image>
+            <el-image style="width: 160px; height: 60px; margin-top: 20px; display: block" :src="'http://'+HOST_FILES+scope.row.image_url" @click.stop="previewImage(scope.row.image_url)"></el-image>
           </el-radio>
         </template>
       </el-table-column>
@@ -28,7 +28,7 @@
       </el-table-column>
       <el-table-column prop="imageUrl" label="图片" width="120">
         <template slot-scope="scope">
-          <el-image style="width: 60px; height: 60px" :src="'http://'+HOST_FILES+scope.row.imageUrl" @click="previewImage(scope.row)"></el-image>
+          <el-image style="width: 60px; height: 60px" :src="'http://'+HOST_FILES+scope.row.imageUrl" @click.stop="previewImage(scope.row.imageUrl)"></el-image>
         </template>
       </el-table-column>
       <el-table-column label="库存" width="140">
@@ -375,9 +375,9 @@ export default {
     },
 
     // 预览图片
-    previewImage (row) {
+    previewImage (imageUrl) {
       this.imgDialogVisible = true
-      this.dialogImageUrl = 'http://' + this.HOST_FILES + row.imageUrl
+      this.dialogImageUrl = 'http://' + this.HOST_FILES + imageUrl
     }
   },
   created () {

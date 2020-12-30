@@ -13,7 +13,7 @@
             </el-date-picker>
             </div>
           <el-button size="mini" type="primary" @click="getReport(1)">刷新</el-button>
-          <el-button size="mini" type="primary" plain>导出</el-button>
+          <el-button size="mini" type="primary" plain  @click="exportFile()">导出</el-button>
         </div>
     </template>
     <el-table :data="list" border style="width: 100%" size="mini" v-loading="loading" :span-method="objectSpanMethod">
@@ -155,6 +155,21 @@ export default {
           }
         }
       }
+    },
+
+    exportFile () {
+      const data = {
+        giftName: this.giftName,
+        year: this.year
+      }
+      
+      this.$api.EXPORT_GIFT(data).then((res) => {
+        const href = 'http://' + this.HOST_FILES + res.url
+        window.location.href = href
+        this.$message.success('导出成功')
+      }).catch(e => {
+        this.$message.error('导出失败')
+      })
     },
 
   },

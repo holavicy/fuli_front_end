@@ -13,7 +13,7 @@
             </el-date-picker>
             </div>
           <el-button size="mini" type="primary" @click="getReport(1)">刷新</el-button>
-          <el-button size="mini" type="primary" plain>导出</el-button>
+          <el-button size="mini" type="primary" plain @click="exportFile()">导出</el-button>
         </div>
     </template>
     <el-table :data="list" border style="width: 100%" size="mini" v-loading="loading">
@@ -86,6 +86,22 @@ export default {
         this.loading = false
         this.list = res.list
         this.pagination.total = res.count
+      })
+    },
+
+    exportFile () {
+       const data = {
+        goodsName: this.goodsName,
+        beginDate: this.value1[0] ? dayjs(this.value1[0]).format('YYYY-M-D') : '',
+        endDate: this.value1[1] ? dayjs(this.value1[1]).format('YYYY-M-D') : ''
+      }
+      
+      this.$api.EXPORT_ALL_GOODS_STOCK_IN(data).then((res) => {
+        const href = 'http://' + this.HOST_FILES + res.url
+        window.location.href = href
+        this.$message.success('导出成功')
+      }).catch(e => {
+        this.$message.error('导出失败')
       })
     },
 

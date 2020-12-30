@@ -20,7 +20,7 @@
           <template slot-scope="scope">
             <div class="gift-name-wrapper"></div>
             <p>{{scope.row.giftBagName}}</p>
-            <el-image style="width: 160px; height: 60px; margin: 0 auto" :src="'http://'+HOST_FILES+scope.row.image_url"></el-image>
+            <el-image style="width: 160px; height: 60px; margin: 0 auto" :src="'http://'+HOST_FILES+scope.row.image_url" @click.stop="previewImage(scope.row.image_url)"></el-image>
           </template>
         </el-table-column>
         <el-table-column label="商品名称" width="180">
@@ -31,7 +31,7 @@
         </el-table-column>
         <el-table-column prop="imageUrl" label="图片" width="180">
           <template slot-scope="scope">
-            <el-image style="width: 60px; height: 60px" :src="'http://'+HOST_FILES+scope.row.imageUrl"></el-image>
+            <el-image style="width: 60px; height: 60px" :src="'http://'+HOST_FILES+scope.row.imageUrl" @click.stop="previewImage(scope.row.imageUrl)"></el-image>
           </template>
         </el-table-column>
         <el-table-column label="库存" width="100">
@@ -95,6 +95,11 @@
             <el-button type="primary" @click="submitNewGoods()">确 定</el-button>
         </div>
     </el-dialog>
+
+    <!-- 图片预览 -->
+    <el-dialog :visible.sync="imgDialogVisible" width="30%">
+      <img width="100%" :src="dialogImageUrl" alt="">
+    </el-dialog>
   </d2-container>
 </template>
 
@@ -104,6 +109,8 @@ export default {
   name: 'giftBagConfig',
   data () {
     return {
+      imgDialogVisible: false,
+      dialogImageUrl: '',
       file: null,
       mustChooseGoodsIndex: '',
       mustChooseGoods: null,
@@ -132,6 +139,7 @@ export default {
       giftBagOriList: [],
       newGiftBag: {
         name: '',
+        image_url: '',
         limitGoodsNum: 0,
         goods: []
       },
@@ -196,6 +204,7 @@ export default {
       this.selectedGoodsList = []
       this.newGiftBag = {
         name: '',
+        image_url: '',
         limitGoodsNum: 0,
         goods: []
       }
@@ -412,6 +421,12 @@ export default {
         })
         this.getGifts()
       })
+    },
+
+    // 预览图片
+    previewImage (imageUrl) {
+      this.imgDialogVisible = true
+      this.dialogImageUrl = 'http://' + this.HOST_FILES + imageUrl
     }
   },
   watch: {

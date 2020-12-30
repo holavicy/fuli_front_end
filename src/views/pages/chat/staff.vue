@@ -12,7 +12,7 @@
                 </el-select>
             </div>
             <el-button size="mini" type="primary" @click="getAllUsers()">查询</el-button>
-            <!-- <el-button size="mini" type="primary" plain>导出</el-button> -->
+            <el-button size="mini" type="primary" plain @click="exportFile()">导出</el-button>
         </div>
     </template>
     <el-table :data="goodsList" border style="width: 100%" size="mini" v-loading="loading">
@@ -244,7 +244,26 @@ export default {
           console.log(res)
         })
       })
-    }
+    },
+    exportFile () {
+      const data = {
+        staffNo: this.staffNoSearch,
+        name: this.name,
+        getStatus: this.getStatus,
+        getYear: this.getYear ? dayjs(this.getYear).endOf('year').format('YYYY-M-D') : dayjs(this.today).endOf('year').format('YYYY-M-D')
+      }
+      this.loading = true
+      this.$api.EXPORT_STAFF(data).then((res) => {
+        this.loading = false
+        const href = 'http://' + this.HOST_FILES + res.url
+        window.location.href = href
+        this.$message.success('导出成功')
+      }).catch(e => {
+        this.loading = false
+        this.$message.error('导出失败')
+      })
+    },
+
   },
 
   created () {
