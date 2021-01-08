@@ -150,6 +150,16 @@ const frameIn = [
         },
         component: _import('pages/chat/zBirthStaff')
       },
+      // 花名册
+      {
+        path: 'huamingce',
+        name: 'huamingce',
+        meta: {
+          title: '花名册',
+          auth: true
+        },
+        component: _import('pages/chat/huaMingCe')
+      },
       // 系统 前端日志
       {
         path: 'log',

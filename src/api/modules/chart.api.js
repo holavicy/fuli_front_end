@@ -42,5 +42,11 @@ export default ({ request }) => ({
     return request({
       url: '/zBirthStaff?page=' + (data.page || '') + '&pageSize=' + (data.pageSize || '') + '&staffNo=' + (data.staffNo || '') + '&name=' + (data.name || '') + '&getYear=' + (data.getYear || '')
     })
+  },
+  // 花名册
+  HUA_MING_CE (data) {
+    return request({
+      url: '/huaMingCe?page=' + (data.page || '') + '&pageSize=' + (data.pageSize || '') + '&staffNo=' + (data.staffNo || '') + '&name=' + (data.name || '') + '&getYear=' + (data.getYear || '')
+    })
   }
 })

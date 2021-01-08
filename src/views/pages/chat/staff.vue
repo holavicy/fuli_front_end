@@ -154,7 +154,9 @@ export default {
     canOthersGet (index, user) {
       console.log(user)
       console.log('start')
-      const url = 'http://192.168.40.229:8081/gift/'
+      // const url = 'http://172.18.1.46:8080/gift/'
+      // const url = 'http://192.168.40.229:8081/gift/'
+      const url = 'http://222.186.81.36:8081/gift/'
       this.$api.JASPI_CONFIG({url: url}).then((res) => {
         console.log(res)
         dd.config({
@@ -198,7 +200,7 @@ export default {
                   this.getAllUsers()
                   const userData = {
                     userId: r.jobnumber,
-                    msg: '管理员已设置您帮助他人代领生日福利礼包，快去帮忙领取吧'
+                    msg: '管理员已设置您帮助'+user.NAME+'代领生日福利礼包，快去帮忙领取吧'
                   }
                   // 提醒设置的代领人
                   this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
@@ -206,13 +208,13 @@ export default {
                     console.log(res)
                   })
                   // 提醒员工本人
-                  // const staffData = {
-                  //   userId: user.CODE,
-                  //   msg: '管理员已设置' + r.name + '帮您领取生日福利'
-                  // }
-                  // this.$api.SEND_SUPPLY_MESSAGE(staffData).then(res => {
-                  //   console.log(res)
-                  // })
+                  const staffData = {
+                    userId: user.CODE,
+                    msg: '管理员已设置' + r.name + '帮您领取生日福利'
+                  }
+                  this.$api.SEND_SUPPLY_MESSAGE(staffData).then(res => {
+                    console.log(res)
+                  })
                 })
               })
             },
@@ -228,6 +230,7 @@ export default {
     },
     cancelOthersGet (index, user) {
       console.log(user.CODE)
+      console.log(user)
       const data = {
         staffNo: user.CODE,
         year: this.year
@@ -237,7 +240,7 @@ export default {
         this.getAllUsers()
         const userData = {
           userId: user.othersStaffNo,
-          msg: '管理员已取消您帮助他人代领生日礼包，点击查看详情'
+          msg: '管理员已取消您帮助'+user.NAME+'代领生日礼包，点击查看详情'
         }
         this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
           console.log('发送成功')
