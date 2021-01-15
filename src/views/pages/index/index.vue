@@ -3,11 +3,10 @@
     <template slot="header">
       <div class="user-info">
         <div class="left">
-          <!-- <img style="width: 100px; height: 100px" :src="userInfo.avatar"/> -->
           <div>
             <p class="name">{{userInfo.name}}</p>
             <p>{{userInfo.staffNo}}</p>
-          </div>
+          </div> 
         </div>
         <div class="right">
           <div class="line-item"><span class="label">出生日期：</span><span class="value">{{userInfo.birthday}}</span></div>
@@ -15,7 +14,10 @@
         </div>
       </div>
     </template>
+
+    <!-- 礼包状态信息 -->
     <div class="gift-bag-info">
+      <!-- 试用期员工不可以领取礼包 -->
       <div v-if="userInfo.userStatus == 2" class="wrapper">
         <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
         <div class="desc">
@@ -23,36 +25,52 @@
           <div class="light-info">您正处于试用期，转正之后才可以享受生日礼包福利哦~</div>
         </div>
       </div>
+      <!-- 正式员工可以领取礼包 -->
       <div v-else>
+
+        <!-- 在生日之前转正可领取，或职级《=4 可领取 -->
         <div v-if="thisYearBirthday >= userInfo.hiredate || userInfo.JOBRANKCODE <= 4">
-          <div v-if="isZBirthday" class="wrapper">
-            <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
-            <div class="desc">
-              <div class="weight-info">您有一个生日礼包可以领取</div>
-              <div class="light-info">您有一个整生日福利可通过OA申请，快去领取吧~</div>
-            </div>
-          </div>
-          <div v-else>
-            <div v-if="orderList.length == 0" class="wrapper">
+          <!-- 若到了生日这一天显示可领取 -->
+          <div v-if="today>=thisYearBirthday || userInfo.JOBRANKCODE <= 4">
+            <div v-if="isZBirthday" class="wrapper">
               <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
               <div class="desc">
                 <div class="weight-info">您有一个生日礼包可以领取</div>
-                <div class="light-info">HAPPY BIRTHDAY~您今年的生日礼包福利可以申请啦，快去领取吧~</div>
-                <el-button type="primary" class="btn-cus" round  @click="toGifts()">即刻申请</el-button>
+                <div class="light-info">您有一个整生日福利可通过OA申请，快去领取吧~</div>
               </div>
             </div>
-            <div v-else class="wrapper">
-              <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
-              <div class="desc">
-                <div class="weight-info">您今年的生日礼包福利已申请</div>
-                <div class="light-info" v-if="orderList[0].status == 1">您的生日礼包申请正在审核中，请耐心等待……</div>
-                <div class="light-info" v-if="orderList[0].status == 3">您的生日礼包申请已审核通过，现在可以联系福利管理员前往领取生日礼包啦~</div>
-                <el-button type="primary" round class="btn-cus" v-if="orderList[0].status == 3" @click="finishOrder()">确认领取</el-button>
-                <el-button type="primary" round class="btn-cus" v-if="orderList[0].status == 4" @click="toOrders()">查看详情</el-button>
+            <div v-else>
+              <div v-if="orderList.length == 0" class="wrapper">
+                <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
+                <div class="desc">
+                  <div class="weight-info">您有一个生日礼包可以领取</div>
+                  <div class="light-info">HAPPY BIRTHDAY~您今年的生日礼包福利可以申请啦，快去领取吧~</div>
+                  <el-button type="primary" class="btn-cus" round  @click="toGifts()">即刻申请</el-button>
+                </div>
+              </div>
+              <div v-else class="wrapper">
+                <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
+                <div class="desc">
+                  <div class="weight-info">您今年的生日礼包福利已申请</div>
+                  <div class="light-info" v-if="orderList[0].status == 1">您的生日礼包申请正在审核中，请耐心等待……</div>
+                  <div class="light-info" v-if="orderList[0].status == 3">您的生日礼包申请已审核通过，现在可以联系福利管理员前往领取生日礼包啦~</div>
+                  <el-button type="primary" round class="btn-cus" v-if="orderList[0].status == 3" @click="finishOrder()">确认领取</el-button>
+                  <el-button type="primary" round class="btn-cus" v-if="orderList[0].status == 4" @click="toOrders()">查看详情</el-button>
+                </div>
               </div>
             </div>
           </div>
+
+          <div v-else class="wrapper">
+            <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
+            <div class="desc">
+              <div class="weight-info">暂无生日礼包可领取</div>
+              <div class="light-info">小主别急，您的生日还没到哦，请于{{thisYearBirthday}}之后再来吧~</div>
+            </div>
+          </div>
         </div>
+
+        <!-- 在生日之后转正不可领取 -->
         <div v-else class="wrapper">
           <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
           <div class="desc">
@@ -60,7 +78,9 @@
             <div class="light-info">您今年的生日小于转正日期，无法申请生日礼包，明年即可申请啦~</div>
           </div>
         </div>
+
       </div>
+
     </div>
 
     <!-- 当前登录人的代领列表 -->

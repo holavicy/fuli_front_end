@@ -45,8 +45,7 @@ const menu = [
       { path: '/giftRecord', title: '礼包领取明细报表', roles: ['admin'] },
       { path: '/giftSum', title: '礼包领取汇总报表', roles: ['admin'] },
       { path: '/staffSummary', title: '一般生日礼包人员统计报表', roles: ['admin'] },
-      { path: '/zBirthStaffSummary', title: '整生日人员统计报表', roles: ['admin'] },
-      { path: '/huamingce', title: '花名册', roles: ['admin'] }
+      { path: '/zBirthStaffSummary', title: '整生日人员统计报表', roles: ['admin'] }
     ],
     roles: ['admin']
   }
