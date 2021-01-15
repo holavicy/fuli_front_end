@@ -122,12 +122,23 @@ export default {
       creatorName: '',
       canSupply: false,
       imgDialogVisible: false,
-      supplyStaffList: []
+      supplyStaffList: [],
+      userInfo: null
     }
   },
   computed: {
     year: function () {
       return this.today.getFullYear()
+    },
+
+    thisYearBirthday: function () {
+      return this.userInfo.birthday ? this.userInfo.birthday.replace(/^[0-9]{4}/g, this.year) : ''
+    },
+
+    isZBirthday: function () {
+      const oriYear = this.userInfo.birthday ? /^[0-9]{4}/g.exec(this.userInfo.birthday)[0] : 0
+      const isZBirthday = (Number(this.year) - Number(oriYear) + 1) % 10 === 0 ? true : false
+      return isZBirthday
     },
 
     selectedGiftBag: function () {
@@ -193,6 +204,11 @@ export default {
     },
     // 创建订单
     createOrder () {
+      // 判断是否可以领取礼包
+      if (!(this.userInfo.userStatus != 2 && ((this.thisYearBirthday >= this.userInfo.hiredate && this.today >= this.thisYearBirthday) || this.userInfo.JOBRANKCODE <= 4))) {
+        this.$message.error('暂不满足申请礼包的条件')
+        return
+      }
       // 判断是否选择了礼包
       if (!this.selectedGiftBag.id) {
         this.$message.error('请先选择礼包')
@@ -302,6 +318,7 @@ export default {
     async load () {
       const db = await this.database({ user: true })
       const userInfo = db.get('user_info').value()
+      this.userInfo = userInfo
       this.staffNo = userInfo.staffNo
       this.creator = userInfo.staffNo
       this.staffName = userInfo.name
