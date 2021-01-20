@@ -44,7 +44,7 @@ export default ({ request }) => ({
   // 导出整生日礼包人员统计
   EXPORT_Z_STAFF (data) {
     return request({
-      url: '/exportZStaff?staffNo=' + (data.staffNo || '') + '&name=' + (data.name || '') + '&getStatus=' + data.getStatus + '&getYear=' + (data.getYear || '')
+      url: '/exportZStaff?staffNo=' + (data.staffNo || '') + '&name=' + (data.name || '') + '&getStatus=' + data.getStatus + '&getYear=' + (data.getYear || '') + '&startTime=' + (data.startTime || '')+ '&endTime=' + (data.endTime || '')
     })
   },
   // 导出花名册

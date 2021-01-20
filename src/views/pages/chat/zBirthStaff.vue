@@ -5,6 +5,14 @@
             <div class="filter-item"><span>工号：</span> <el-input size="mini" placeholder="请输入内容" v-model="staffNoSearch"></el-input></div>
             <div class="filter-item"><span>姓名：</span> <el-input size="mini" placeholder="请输入内容" v-model="name"></el-input></div>
             <div class="filter-item"><span>年份：</span><el-date-picker size="mini" v-model="getYear" type="year" placeholder="请选择" :picker-options="pickerOptions"></el-date-picker></div>
+            <div class="filter-item"><span>月份：</span><el-select size="mini" clearable v-model="getMonth" placeholder="请选择">
+    <el-option
+      v-for="item in monthOptions"
+      :key="item.value"
+      :label="item.label"
+      :value="item.value">
+    </el-option>
+  </el-select></div>
             <el-button size="mini" type="primary" @click="getAllUsers()">查询</el-button>
             <el-button size="mini" type="primary" plain @click="exportFile()">导出</el-button>
         </div>
@@ -57,6 +65,7 @@ export default {
       name: '',
       getStatus: '',
       getYear: this.year,
+      getMonth: '',
       options: [{
         label: '全部',
         value: ''
@@ -80,7 +89,44 @@ export default {
         disabledDate(time) {
           return time.getTime() < new Date('2020-01-01 00:00:00')
         },
-      }
+      },
+      monthOptions: [ {
+        value: 1,
+        label: '一月'
+      }, {
+        value: 2,
+        label: '二月'
+      }, {
+        value: 3,
+        label: '三月'
+      }, {
+        value: 4,
+        label: '四月'
+      }, {
+        value: 5,
+        label: '五月'
+      }, {
+        value: 6,
+        label: '六月'
+      }, {
+        value: 7,
+        label: '七月'
+      }, {
+        value: 8,
+        label: '八月'
+      }, {
+        value: 9,
+        label: '九月'
+      }, {
+        value: 10,
+        label: '十月'
+      }, {
+        value: 11,
+        label: '十一月'
+      }, {
+        value: 12,
+        label: '十二月'
+      }]
     }
   },
   computed: {
@@ -113,6 +159,18 @@ export default {
         pageSize: this.pagination.pageSize,
         getYear: this.getYear ? dayjs(this.getYear).endOf('year').format('YYYY-M-D') : dayjs(this.today).endOf('year').format('YYYY-M-D')
       }
+      console.log(this.getMonth)
+      if (this.getMonth) {
+        const getYear = this.getYear ? dayjs(this.getYear).year() : dayjs(this.today).year()
+        const searchDate = String(getYear)+'-'+String(this.getMonth)+'-01'
+        const startTime = dayjs(searchDate).startOf('month').format('YYYY-MM-D HH:mm:ss')
+        const endTime = dayjs(searchDate).endOf('month').format('YYYY-MM-D HH:mm:ss')
+        console.log(startTime)
+        console.log(endTime)
+        data.startTime = startTime        
+        data.endTime = endTime
+      }
+      
       this.$api.Z_BIRTH_STAFF(data).then((res) => {
         this.loading = false
         this.goodsList = res.list
@@ -121,11 +179,20 @@ export default {
     },
     exportFile () {
       this.loading = true
-       const data = {
+      let data = {
         staffNo: this.staffNoSearch,
         name: this.name,
         getStatus: this.getStatus,
         getYear: this.getYear ? dayjs(this.getYear).endOf('year').format('YYYY-M-D') : dayjs(this.today).endOf('year').format('YYYY-M-D')
+      }
+
+      if (this.getMonth) {
+        const getYear = this.getYear ? dayjs(this.getYear).year() : dayjs(this.today).year()
+        const searchDate = String(getYear)+'-'+String(this.getMonth)+'-01'
+        const startTime = dayjs(searchDate).startOf('month').format('YYYY-MM-D HH:mm:ss')
+        const endTime = dayjs(searchDate).endOf('month').format('YYYY-MM-D HH:mm:ss')
+        data.startTime = startTime        
+        data.endTime = endTime
       }
       
       this.$api.EXPORT_Z_STAFF(data).then((res) => {

@@ -40,7 +40,7 @@ export default ({ request }) => ({
   // 整生日人员统计报表
   Z_BIRTH_STAFF (data) {
     return request({
-      url: '/zBirthStaff?page=' + (data.page || '') + '&pageSize=' + (data.pageSize || '') + '&staffNo=' + (data.staffNo || '') + '&name=' + (data.name || '') + '&getYear=' + (data.getYear || '')
+      url: '/zBirthStaff?page=' + (data.page || '') + '&pageSize=' + (data.pageSize || '') + '&staffNo=' + (data.staffNo || '') + '&name=' + (data.name || '') + '&getYear=' + (data.getYear || '') + '&startTime=' + (data.startTime || '') + '&endTime=' + (data.endTime || '')
     })
   },
   // 花名册
