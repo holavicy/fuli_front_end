@@ -66,7 +66,7 @@
               <el-input v-model="newGoods.unit" autocomplete="off"></el-input>
           </el-form-item>
           <el-form-item label="数量" :label-width="formLabelWidth" v-if="!newGoods.id">
-              <el-input-number v-model="newGoods.num" :min="1" :max="1000" label="描述文字"></el-input-number>
+              <el-input-number v-model="newGoods.num" :min="0" :max="1000" label="描述文字"></el-input-number>
           </el-form-item>
           <el-form-item label="单价" :label-width="formLabelWidth">
             <el-input v-model="newGoods.price">
@@ -250,10 +250,10 @@ export default {
         this.$message.error('请输入商品名称')
         return
       }
-      if (!this.newGoods.id && !this.newGoods.num) {
-        this.$message.error('请输入商品数量')
-        return
-      }
+      // if (!this.newGoods.id && !this.newGoods.num) {
+      //   this.$message.error('请输入商品数量')
+      //   return
+      // }
       this.dialogFormVisible = false
       let data = this.newGoods
       data.staffNo = this.userInfo.staffNo

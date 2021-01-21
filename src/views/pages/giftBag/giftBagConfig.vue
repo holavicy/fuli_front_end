@@ -53,7 +53,7 @@
     <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
 
     <!-- 新增、编辑弹框 -->
-    <el-dialog :title="dialogTitle" :visible.sync="dialogFormVisible" width="66%">
+    <el-dialog :title="dialogTitle" :visible.sync="dialogFormVisible" width="70%">
         <el-form :model="newGiftBag">
             <el-form-item label="礼包名称" :label-width="formLabelWidth">
               <el-input v-model="newGiftBag.name" autocomplete="off" maxlength="20"></el-input>
