@@ -72,8 +72,8 @@
             <el-form-item label="单品限制" :label-width="formLabelWidth">
               <el-input-number v-model="newGiftBag.limitGoodsNum" :min="0" :max="20" label="描述文字"></el-input-number>
             </el-form-item>
-            <el-form-item label="必选商品" :label-width="formLabelWidth">
-              <el-select v-model="mustChooseGoodsIndex" filterable clearable placeholder="请选择">
+            <el-form-item label="必选商品" :label-width="formLabelWidth" >
+              <el-select v-model="mustChooseGoodsIndex" multiple filterable clearable placeholder="请选择" style="width:100%">
                 <el-option
                   v-for="item in goodsOptions"
                   :key="item.key"
@@ -114,6 +114,7 @@ export default {
       file: null,
       mustChooseGoodsIndex: '',
       mustChooseGoods: null,
+      mustChooseGoodsList: [],
       dialogTitle: '新增礼包',
       dialogFormVisible: false,
       giftBagName: '',
@@ -202,6 +203,8 @@ export default {
       this.dialogTitle = '新增礼包'
       this.dialogFormVisible = true
       this.selectedGoodsList = []
+      this.mustChooseGoodsList = []
+      this.mustChooseGoodsIndex = []
       this.newGiftBag = {
         name: '',
         image_url: '',
@@ -213,40 +216,38 @@ export default {
     // 编辑礼包
     editGoods (index, row) {
       this.dialogTitle = '编辑礼包'
+      
       this.getOnSaleGoods().then((res) => {
         this.dialogFormVisible = true
-        this.newGiftBag = this.giftBagOriList[row.index - 1]
+        this.newGiftBag = {...this.giftBagOriList[row.index - 1]}
         console.log('this.newGiftBag')
         console.log(this.newGiftBag)
-        this.selectedGoodsList = []
-        let mustGoodsIndex = ''
-        console.log(this.newGiftBag.goods)
+        console.log('-----------------------------------------------------------')
+        let mustChooseGoodsIndex = []
+        let selectedGoodsList = []
+        let goodsList = []
         this.newGiftBag.goods.forEach((goods, goodsIndex) => {
-          console.log(goods)
           this.goodsData.forEach((g, i) => {
             if (goods.is_must == 1 && goods.id === g.id) {
               console.log(i)
-              mustGoodsIndex = goodsIndex
-              this.mustChooseGoodsIndex = i
+              mustChooseGoodsIndex.push(i)
             }
             if (goods.id === g.id && goods.is_must == 0) {
-              this.selectedGoodsList.push(i)
+              selectedGoodsList.push(i)
+              goodsList.push(g)
             }
           })
         })
-
-        if (mustGoodsIndex != '') {
-          this.newGiftBag.goods.splice(mustGoodsIndex, 1)
-        }
+        
+        this.selectedGoodsList = selectedGoodsList
+        this.newGiftBag.goods = goodsList
+        this.mustChooseGoodsIndex = mustChooseGoodsIndex
       })
     },
     // 提交礼包数据
     submitNewGoods () {
-      if (this.mustChooseGoods) {
-        this.mustChooseGoods['is_must'] = 1
-        this.newGiftBag.goods.unshift(this.mustChooseGoods)
-      }
       let data = this.newGiftBag
+      console.log(data)
       if (!data.name) {
         this.$message.error('请输入礼包名称')
         return
@@ -257,23 +258,33 @@ export default {
         return
       }
 
-      if (this.mustChooseGoods && data.limitGoodsNum == 0) {
-        this.$message.error('请输入单品限制')
+      // if (this.mustChooseGoods && data.limitGoodsNum == 0) {
+      //   this.$message.error('请输入单品限制')
+      //   return
+      // }
+
+      if (data.limitGoodsNum >= data.goods.length) {
+        this.$message.error('单品限制必须小于可选商品的个数')
         return
       }
 
-      if (this.mustChooseGoods && data.limitGoodsNum >= data.goods.length - 1) {
-        this.$message.error('单品限制必须小于商品的个数')
-        return
+      data.goods.forEach(item => {
+        item['is_must'] = 0
+      })
+
+      if (this.mustChooseGoodsList.length>0) {
+        this.mustChooseGoodsList.forEach(item => {
+          item['is_must'] = 1
+        })
+        let goodsList =  this.mustChooseGoodsList.concat(data.goods)
+        data.goods = goodsList
       }
 
-      if (!this.mustChooseGoods && data.limitGoodsNum >= data.goods.length) {
-        this.$message.error('单品限制必须小于商品的个数')
-        return
-      }
+      console.log(data)
 
       this.dialogFormVisible = false
       data.staffNo = this.userInfo.staffNo
+
       if (this.newGiftBag.id) {
         console.log('编辑')
         this.$api.EDIT_GIFT_BAG(data).then(res => {
@@ -432,29 +443,55 @@ export default {
   watch: {
     // 当选择了必选商品后，可选商品列表自动去掉必选商品, 若选择的商品已被选到了穿梭框的右边，也要更新穿梭框右边的值
     mustChooseGoodsIndex (val) {
-      console.log('watch')
-      console.log(val)
-      console.log(typeof(val))
-      console.log(val != '')
-      if (typeof(val) === 'number' && val >= 0) {
-        this.mustChooseGoods = this.goodsData[val]
-        let ori = [...this.formattedGoodsData]
-        ori.splice(val, 1)
-        this.transferData = ori
-        this.newGiftBag.goods = []
-        let selectedGoodsList = []
-        this.selectedGoodsList.forEach(i => {
-          if (i != val) {
-            this.goodsData[i]['is_must'] = 0
-            this.newGiftBag.goods.push(this.goodsData[i])
-            selectedGoodsList.push(i)
-          }
-          
+      if (val.length>0) {
+        // 更新必选商品列表
+        let mustChooseGoodsList = []
+        val.forEach(index => {
+          this.goodsData[index]['is_must'] = 1
+          mustChooseGoodsList.push(this.goodsData[index])
         })
-        this.selectedGoodsList = selectedGoodsList
+        this.mustChooseGoodsList = mustChooseGoodsList
+        let ori = [...this.formattedGoodsData]
+        let transferData = []
+        ori.forEach((i, index) => {
+          let flag = false
+          val.forEach(item => {
+            if (!flag){
+              if (item == index){
+                flag = true
+              }
+            }
+          })
+          if (!flag){
+            transferData.push(i)
+          }
+        })
+        this.transferData = transferData
+        // 更新已选商品列表
+        // 更新已选商品列表index
+        let oriSelectedGoodsIndexList = [...this.selectedGoodsList]
+        let selectedGoodsIndexList = []
+        this.newGiftBag.goods = []
+        console.log('?????')
+
+        oriSelectedGoodsIndexList.forEach((i, index) => {
+          let flag = false
+          val.forEach(item => {
+            if (!flag){
+              if (item == i){
+                flag = true
+              }
+            }
+          })
+          console.log(flag)
+          if (!flag){
+            selectedGoodsIndexList.push(i)
+            this.newGiftBag.goods.push(this.goodsData[i])
+          }
+        })
+        this.selectedGoodsList = selectedGoodsIndexList
       } else {
-        this.mustChooseGoodsId = ''
-        this.mustChooseGoods = null,
+        this.mustChooseGoodsList = []
         this.transferData = [...this.formattedGoodsData]
       }
     }
