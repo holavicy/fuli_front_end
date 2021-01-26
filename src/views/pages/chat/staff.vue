@@ -159,33 +159,23 @@ export default {
       const url = 'http://222.186.81.36:8081/gift/'
       this.$api.JASPI_CONFIG({url: url}).then((res) => {
         console.log(res)
+        console.log(res.corpId)
         dd.config({
           agentId: res.agentId,
           corpId: res.corpId, //必填，企业ID
           timeStamp: res.timeStamp, // 必填，生成签名的时间戳
           nonceStr: res.nonceStr, // 必填，生成签名的随机串
           signature: res.signature, // 必填，签名
-          jsApiList: ['biz.contact.complexPicker'] // 必填，需要使用的jsapi列表，注意：不要带dd。
+          jsApiList: ['biz.contact.choose'] // 必填，需要使用的jsapi列表，注意：不要带dd。
         })
         dd.ready(() => {
-          dd.biz.contact.complexPicker({
-            "title": "选择申请人",
+          dd.biz.contact.choose({
             "corpId": "dingcd0f5a2514db343b35c2f4657eb6378f",
             "multiple": false,
-            "limitTips": "超出了",
-            "maxUsers": 1,
-            "pickedUsers": [],
-            "pickedDepartments": [],
-            "disabledUsers": [],
-            "disabledDepartments": [],
-            "requiredUsers": [],
-            "requiredDepartments": [],
-            "appId": 927117753,
-            "permissionType": "GLOBAL",
-            "responseUserOnly": false,
-            "startWithDepartmentId": 0,
+            "users": [],
             onSuccess: (result) => {
-              this.$api.GET_INFO_BY_USER_ID({userId: result.users[0].emplId}).then(r => {
+              console.log(result)
+              this.$api.GET_INFO_BY_USER_ID({userId: result[0].emplId}).then(r => {
                 console.log(r)
                 let data = {
                   othersName: r.name,
@@ -198,11 +188,12 @@ export default {
                 this.$api.CREATE_SUPPLY(data).then(res => {
                   this.$message.success('设置成功')
                   this.getAllUsers()
+
+                  // 提醒设置的代领人
                   const userData = {
                     userId: r.jobnumber,
                     msg: '管理员已设置您帮助'+user.NAME+'代领生日福利礼包，快去帮忙领取吧'
                   }
-                  // 提醒设置的代领人
                   this.$api.SEND_SUPPLY_MESSAGE(userData).then(res => {
                     console.log('发送成功')
                     console.log(res)
@@ -227,6 +218,16 @@ export default {
       }).catch((e) => {
         console.log(e)
       })
+
+      dd.error(function(error){
+       /**
+        {
+           errorMessage:"错误信息",// errorMessage 信息会展示出钉钉服务端生成签名使用的参数，请和您生成签名的参数作对比，找出错误的参数
+           errorCode: "错误码"
+        }
+       **/
+       alert('dd error: ' + JSON.stringify(error));
+});
     },
     cancelOthersGet (index, user) {
       console.log(user.CODE)
