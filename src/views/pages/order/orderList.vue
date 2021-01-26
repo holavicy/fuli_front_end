@@ -21,7 +21,7 @@
           <div class="title-wrapper">
             <div class="left">
                 {{index+1}}、
-                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}（另含一张餐券）</span>
+                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}</span>
                 <span class="goods-items"><span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</span></span>
                 <span class="cus-badge" v-if="order.creatorNo != order.staffNo && order.creatorName">由{{order.creatorName.trim()}}代领</span>
             </div>

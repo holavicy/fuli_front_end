@@ -48,10 +48,10 @@
     </el-table>
     <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagination.currentPage" :page-sizes="[5, 10, 20, 50, 100]" :page-size="pagination.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="pagination.total" style="margin-top:10px"></el-pagination>
       <el-divider content-position="left" style="font-size:18px">订单详情</el-divider>
-      <div class="tip-info-wrapper">
+      <!-- <div class="tip-info-wrapper">
         <img :src="`${$baseUrl}image/common/warning.png`">
         <span>生日福利包含一张餐券和一份生日礼包，领取生日礼包的时候，管理员会同时发放一张餐券，确认领取礼包的时候请确认餐券与礼包是否都已领取！</span>
-      </div>
+      </div> -->
       <div class="footer-wrapper">
         <div class="order-info">
           <div class="info-item"><span class="title">生日礼包领取人：</span><span>{{staffName}}</span><span v-if="canSupply" type="text" class="btn-primary" style="margin-left: 20px" @click="chooseStaff()">代他人领取</span></div>

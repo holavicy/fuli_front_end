@@ -21,7 +21,7 @@
           <div class="title-wrapper">
             <div class="left">
                 {{index+1}}、
-                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}（另含一张餐券）</span>
+                <span style="font-weight: bold">{{order.year}}——{{order.giftName}}</span>
                 <span class="goods" v-for="(goods, i) in order.goods" :key = "i">{{goods.name}}</span>
             </div>
             <div class="staff-name">{{order.staffName}}</div>
