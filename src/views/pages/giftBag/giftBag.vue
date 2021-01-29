@@ -205,7 +205,7 @@ export default {
     // 创建订单
     createOrder () {
       // 判断是否可以领取礼包
-      if (!(this.userInfo.userStatus != 2 && ((this.thisYearBirthday >= this.userInfo.hiredate && this.today >= this.thisYearBirthday) || this.userInfo.JOBRANKCODE <= 4))) {
+      if (!(this.userInfo.userStatus != 2 && ((this.thisYearBirthday >= this.userInfo.hiredate && this.today >= new Date(this.thisYearBirthday)) || this.userInfo.JOBRANKCODE <= 4))) {
         this.$message.error('暂不满足申请礼包的条件')
         return
       }
@@ -429,7 +429,7 @@ export default {
 }
 
 .footer-wrapper{
-    height: 80px;
+    min-height: 100px;
   /* margin-top: 40px; */
   color: #303133;   
   font-size: 14px;
