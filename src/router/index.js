@@ -86,6 +86,9 @@ router.beforeEach(async (to, from, next) => {
                   let nc_data = {
                     code: res.jobnumber
                   }
+                  // let nc_data = {
+                  //   code: '110445'
+                  // }
                   api.GET_USERINFO_NC(nc_data).then( async (r) => {
                     user_info.birthday = r.list[0].BIRTHDATE
                     user_info.hiredate = r.list[0].HIREDATE

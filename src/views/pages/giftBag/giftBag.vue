@@ -132,7 +132,7 @@ export default {
     },
 
     thisYearBirthday: function () {
-      return this.userInfo.birthday ? this.userInfo.birthday.replace(/^[0-9]{4}/g, this.year) : ''
+      return this.userInfo.birthday ? this.get7DaysBefore(this.userInfo.birthday.replace(/^[0-9]{4}/g, this.year)) : ''
     },
 
     isZBirthday: function () {

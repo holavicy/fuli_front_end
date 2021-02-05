@@ -30,8 +30,10 @@
 
         <!-- 在生日之前转正可领取，或职级《=4 可领取 -->
         <div v-if="thisYearBirthday >= userInfo.hiredate || userInfo.JOBRANKCODE <= 4">
+        <!-- {{new Date(thisYearBirthday)}}
+          {{today>=new Date(thisYearBirthday)}} -->
           <!-- 若到了生日这一天显示可领取 -->
-          <div v-if="today>=thisYearBirthday || userInfo.JOBRANKCODE <= 4">
+          <div v-if="today>=new Date(thisYearBirthday) || userInfo.JOBRANKCODE <= 4">
             <div v-if="isZBirthday" class="wrapper">
               <img :src="`${$baseUrl}image/common/gift.png`" class="gift-image">
               <div class="desc">
@@ -160,7 +162,7 @@ export default {
     },
 
     thisYearBirthday: function () {
-      return this.userInfo.birthday ? this.userInfo.birthday.replace(/^[0-9]{4}/g, this.year) : ''
+      return this.userInfo.birthday ? this.get7DaysBefore(this.userInfo.birthday.replace(/^[0-9]{4}/g, this.year)) : ''
     },
 
     isZBirthday: function () {
