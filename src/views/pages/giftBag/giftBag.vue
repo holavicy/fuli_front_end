@@ -252,10 +252,10 @@ export default {
         }
       })
       if (this.selectedGiftBag.limitGoodsNum > 0) {
-        data.goods = this.checked
+        data.goods = [...this.checked]
       }
       // 判断所选礼包是否包含必选商品，若包含，则将必选商品头部插入data.goods中
-      if (mustChooseGoods) {
+      if (this.selectedGiftBag.limitGoodsNum > 0 && mustChooseGoods) {
         data.goods.unshift(mustChooseGoods)
       }
       // 领取礼包的人
