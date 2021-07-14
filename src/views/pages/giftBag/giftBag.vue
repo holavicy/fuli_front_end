@@ -204,6 +204,11 @@ export default {
     },
     // 创建订单
     createOrder () {
+      // 判断是否是整生日，整生日无法申请
+      if (this.isZBirthday) {
+        this.$message.error('整生日请到OA中申请')
+        return
+      }
       // 判断是否可以领取礼包
       if (!(this.userInfo.userStatus != 2 && ((this.thisYearBirthday >= this.userInfo.hiredate && this.today >= new Date(this.thisYearBirthday)) || this.userInfo.JOBRANKCODE <= 4))) {
         this.$message.error('暂不满足申请礼包的条件')
